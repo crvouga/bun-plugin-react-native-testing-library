@@ -45,9 +45,7 @@ describe("config.ts", () => {
 
 describe("package.json peer/deps hygiene", () => {
   test("direct dependencies contain no jest or metro packages", () => {
-    const pkg = JSON.parse(
-      readFileSync(path.resolve(import.meta.dir, "../../package.json"), "utf8"),
-    ) as {
+    const pkg = JSON.parse(readFileSync(path.resolve(import.meta.dir, "../../package.json"), "utf8")) as {
       dependencies?: Record<string, string>;
       devDependencies?: Record<string, string>;
     };

@@ -20,10 +20,7 @@ function realRnExportNames(): string[] {
 
 describe("contract: RN public API exports", () => {
   test("mock covers every getter from react-native/index.js", () => {
-    const api = createReactNativePublicAPI(resolveConfig({ platform: "ios" })) as Record<
-      string,
-      unknown
-    >;
+    const api = createReactNativePublicAPI(resolveConfig({ platform: "ios" })) as Record<string, unknown>;
     const expected = realRnExportNames();
     const missing = expected.filter((n) => !(n in api) || api[n] === undefined);
     expect(missing).toEqual([]);

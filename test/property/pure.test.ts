@@ -3,11 +3,7 @@ import fc from "fast-check";
 import path from "node:path";
 import { assetModuleSource, isAssetPath } from "../../src/assets.ts";
 import { DEFAULT_ASSET_EXTS } from "../../src/config.ts";
-import {
-  brokenResolveSkipNative,
-  resolveAgainstMap,
-  resolvePlatformFile,
-} from "../../src/resolve.ts";
+import { brokenResolveSkipNative, resolveAgainstMap, resolvePlatformFile } from "../../src/resolve.ts";
 import { transformFlow } from "../../src/transform-flow.ts";
 import { fcOpts, fcRuns } from "../fc-opts.ts";
 
@@ -59,10 +55,7 @@ describe("property: resolver soundness & priority", () => {
       fc.assert(
         fc.property(safeName, platforms, (base, platform) => {
           const dir = "/virt";
-          const files = new Set([
-            path.join(dir, `${base}.native.tsx`),
-            path.join(dir, `${base}.tsx`),
-          ]);
+          const files = new Set([path.join(dir, `${base}.native.tsx`), path.join(dir, `${base}.tsx`)]);
           const exists = (p: string) => files.has(p);
           const correct = resolvePlatformFile(`./${base}`, dir, platform, exists);
           const broken = brokenResolveSkipNative(`./${base}`, dir, platform, exists);
@@ -158,9 +151,7 @@ describe("property: Flow transform preserves semantics + idempotence", () => {
         // Avoid param names colliding with the function name
         const args = node.args.map((a, i) => (a === node.name ? `p${i}` : a));
         const typedArgs = args.map((a) => `${a}: number`).join(", ");
-        const expr = node.bodyExpr
-          .replace(/\ba\b/g, args[0] ?? "0")
-          .replace(/\bb\b/g, args[1] ?? args[0] ?? "0");
+        const expr = node.bodyExpr.replace(/\ba\b/g, args[0] ?? "0").replace(/\bb\b/g, args[1] ?? args[0] ?? "0");
         lines.push(`function ${node.name}(${typedArgs}): number { return ${expr}; }`);
       }
     }
@@ -182,9 +173,7 @@ describe("property: Flow transform preserves semantics + idempotence", () => {
         if (used.has(node.name)) continue;
         used.add(node.name);
         const args = node.args.map((a, i) => (a === node.name ? `p${i}` : a));
-        const expr = node.bodyExpr
-          .replace(/\ba\b/g, args[0] ?? "0")
-          .replace(/\bb\b/g, args[1] ?? args[0] ?? "0");
+        const expr = node.bodyExpr.replace(/\ba\b/g, args[0] ?? "0").replace(/\bb\b/g, args[1] ?? args[0] ?? "0");
         lines.push(`function ${node.name}(${args.join(", ")}) { return ${expr}; }`);
       }
     }

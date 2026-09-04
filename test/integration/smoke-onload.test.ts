@@ -28,10 +28,7 @@ afterAll(() => {
 function writeTree() {
   const fixture = path.join(workDir, "node_modules", "fixture-pkg");
   mkdirSync(path.join(fixture, "lib"), { recursive: true });
-  writeFileSync(
-    path.join(fixture, "package.json"),
-    JSON.stringify({ name: "fixture-pkg", main: "index.js" }),
-  );
+  writeFileSync(path.join(fixture, "package.json"), JSON.stringify({ name: "fixture-pkg", main: "index.js" }));
   writeFileSync(
     path.join(fixture, "index.js"),
     `const native = require("./lib/native");
@@ -143,7 +140,7 @@ describe("smoke: Bun node_modules onLoad pitfall", () => {
       onResolveBare: result.resolveBare,
       onResolveRelative: result.resolveRelative,
       recommendedStrategy: transformed ? "direct" : "namespace",
-      primaryPublicApiStrategy: "mock.module(\"react-native\")",
+      primaryPublicApiStrategy: 'mock.module("react-native")',
       notes: [
         "On Bun 1.4.0, onLoad for node_modules paths fires but returned contents are ignored (empty/undefined exports) — oven-sh/bun#10083.",
         "Bare package specifiers skip runtime onResolve (could_be_plugin gate).",

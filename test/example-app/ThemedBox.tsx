@@ -1,4 +1,3 @@
-
 import { Platform, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 
 export function ThemedBox() {

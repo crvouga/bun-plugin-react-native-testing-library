@@ -34,11 +34,7 @@ export type Section = {
 
 export type SectionListProps = {
   sections?: ReadonlyArray<Section>;
-  renderItem?: (info: {
-    item: unknown;
-    index: number;
-    section: Section;
-  }) => ReactNS.ReactNode;
+  renderItem?: (info: { item: unknown; index: number; section: Section }) => ReactNS.ReactNode;
   renderSectionHeader?: (info: { section: Section }) => ReactNS.ReactNode;
   renderSectionFooter?: (info: { section: Section }) => ReactNS.ReactNode;
   keyExtractor?: (item: unknown, index: number) => string;
@@ -51,10 +47,7 @@ export type SectionListProps = {
   [key: string]: unknown;
 };
 
-export function createLists(
-  React: typeof ReactNS,
-  View: ReactNS.ComponentType,
-) {
+export function createLists(React: typeof ReactNS, View: ReactNS.ComponentType) {
   const VirtualizedList = class VirtualizedList extends React.Component<FlatListProps> {
     static displayName = "VirtualizedList";
     scrollToIndex = () => {};
@@ -82,13 +75,9 @@ export function createLists(
           : data.flatMap((item, index) => {
               const row = renderItem?.({ item, index }) ?? null;
               const key = keyExtractor ? keyExtractor(item, index) : String(index);
-              const nodes: ReactNS.ReactNode[] = [
-                React.createElement(React.Fragment, { key }, row),
-              ];
+              const nodes: ReactNS.ReactNode[] = [React.createElement(React.Fragment, { key }, row)];
               if (ItemSeparatorComponent && index < data.length - 1) {
-                nodes.push(
-                  React.createElement(ItemSeparatorComponent, { key: `sep-${key}` }),
-                );
+                nodes.push(React.createElement(ItemSeparatorComponent, { key: `sep-${key}` }));
               }
               return nodes;
             });
@@ -144,38 +133,20 @@ export function createLists(
       sections.forEach((section, sIdx) => {
         if (renderSectionHeader) {
           nodes.push(
-            React.createElement(
-              React.Fragment,
-              { key: `sh-${section.key ?? sIdx}` },
-              renderSectionHeader({ section }),
-            ),
+            React.createElement(React.Fragment, { key: `sh-${section.key ?? sIdx}` }, renderSectionHeader({ section })),
           );
         }
         const data = section.data ?? [];
         data.forEach((item, index) => {
-          const key = keyExtractor
-            ? keyExtractor(item, index)
-            : `${section.key ?? sIdx}-${index}`;
-          nodes.push(
-            React.createElement(
-              React.Fragment,
-              { key },
-              renderItem?.({ item, index, section }) ?? null,
-            ),
-          );
+          const key = keyExtractor ? keyExtractor(item, index) : `${section.key ?? sIdx}-${index}`;
+          nodes.push(React.createElement(React.Fragment, { key }, renderItem?.({ item, index, section }) ?? null));
           if (ItemSeparatorComponent && index < data.length - 1) {
-            nodes.push(
-              React.createElement(ItemSeparatorComponent, { key: `sep-${key}` }),
-            );
+            nodes.push(React.createElement(ItemSeparatorComponent, { key: `sep-${key}` }));
           }
         });
         if (renderSectionFooter) {
           nodes.push(
-            React.createElement(
-              React.Fragment,
-              { key: `sf-${section.key ?? sIdx}` },
-              renderSectionFooter({ section }),
-            ),
+            React.createElement(React.Fragment, { key: `sf-${section.key ?? sIdx}` }, renderSectionFooter({ section })),
           );
         }
         if (SectionSeparatorComponent && sIdx < sections.length - 1) {

@@ -18,20 +18,14 @@ describe("property: fake timers", () => {
           const t = setTimeout(() => setReady(true), delay);
           return () => clearTimeout(t);
         }, []);
-        return (
-          <View testID="root">
-            {ready ? <Text testID="ready">ok</Text> : <Text testID="pending">...</Text>}
-          </View>
-        );
+        return <View testID="root">{ready ? <Text testID="ready">ok</Text> : <Text testID="pending">...</Text>}</View>;
       }
 
       const screen = await render(<Delayed />);
       expect(screen.queryByTestId("pending")).toBeTruthy();
 
       await act(async () => {
-        const asyncAdvance = (jest as any).advanceTimersByTimeAsync as
-          | ((ms: number) => Promise<void>)
-          | undefined;
+        const asyncAdvance = (jest as any).advanceTimersByTimeAsync as ((ms: number) => Promise<void>) | undefined;
         if (typeof asyncAdvance === "function") {
           await asyncAdvance(delay + 5);
         } else {

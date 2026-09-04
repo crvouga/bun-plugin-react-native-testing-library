@@ -95,12 +95,11 @@ When a package is installed in the consumer, preload auto-registers a shim (`lib
 | `zustand` / `@tanstack/react-query` / RTK / `react-hook-form` | no shim | current | Pure JS |
 
 ```bash
-bun run test              # unit + property + contract + example-app (--bail, ~3s)
-bun run test:integration  # spawn suites (cached example sandbox + real-world)
-bun run test:all          # test + integration
-bun run test:real-world   # consumer sandbox directly
+bun test                  # all suites incl. real-world (spawned) — fail-fast
+bun run check             # format + lint + typecheck + test
+bun run test:real-world   # consumer sandbox only
 bun run test:soak         # RN_BUN_FC_RUNS=100 property soak
-RN_BUN_SKIP_REAL_WORLD=1 bun run test:integration  # skip spawned real-world
+RN_BUN_SKIP_REAL_WORLD=1 bun test  # skip spawned real-world
 ```
 
 ## Architecture
@@ -160,12 +159,12 @@ Pin Bun in CI (this repo was verified on **1.4.0**). Re-run `test/integration/sm
 
 ```bash
 bun install
-bun test
+bun run check             # format + lint + typecheck + all tests
+bun test                  # fail-fast suite (includes real-world spawn)
 bun test --coverage
-bun run test:real-world
 ```
 
-Property tests use `fast-check` with `numRuns >= 40–100` and log seeds on failure (`RN_BUN_FC_SEED` for example-app properties).
+Property tests use `fast-check` (`RN_BUN_FC_RUNS`, default 40; `RN_BUN_FC_SEED` for replay).
 
 ## License
 

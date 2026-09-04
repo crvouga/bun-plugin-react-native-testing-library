@@ -24,16 +24,12 @@ describe("contract: RNTL matchers", () => {
   });
 
   test("toHaveDisplayValue on TextInput", async () => {
-    const screen = await render(
-      <TextInput testID="input" value="abc" onChangeText={() => {}} />,
-    );
+    const screen = await render(<TextInput testID="input" value="abc" onChangeText={() => {}} />);
     expect(screen.getByTestId("input")).toHaveDisplayValue("abc");
   });
 
   test("toBeChecked on Switch", async () => {
-    const screen = await render(
-      <Switch testID="sw" value={true} onValueChange={() => {}} />,
-    );
+    const screen = await render(<Switch testID="sw" value={true} onValueChange={() => {}} />);
     expect(screen.getByTestId("sw")).toBeChecked();
   });
 

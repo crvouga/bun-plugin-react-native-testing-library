@@ -150,7 +150,6 @@ export const DEEP_PATHS: Record<string, (api: ReactNativePublicAPI) => unknown> 
   }),
   "react-native/Libraries/Image/AssetSourceResolver": () => ({
     default: class AssetSourceResolver {
-      constructor(..._args: unknown[]) {}
       defaultAsset() {
         return { uri: "" };
       }
@@ -248,7 +247,6 @@ export const DEEP_PATHS: Record<string, (api: ReactNativePublicAPI) => unknown> 
   }),
   "react-native/Libraries/Pressability/Pressability": () => ({
     default: class Pressability {
-      constructor(_config?: unknown) {}
       configure() {}
       reset() {}
       getEventHandlers() {

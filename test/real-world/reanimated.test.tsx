@@ -1,11 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { Text, View } from "react-native";
 import { render } from "@testing-library/react-native";
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-} from "react-native-reanimated";
+import Animated, { useSharedValue, useAnimatedStyle, withTiming } from "react-native-reanimated";
 import * as fc from "fast-check";
 
 describe("reanimated", () => {

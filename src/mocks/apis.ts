@@ -19,10 +19,7 @@ export function createStyleSheet() {
     flatten: (style: unknown): Record<string, unknown> => {
       if (style == null || style === false) return {};
       if (Array.isArray(style)) {
-        return Object.assign(
-          {},
-          ...style.filter(Boolean).map((s) => createStyleSheet().flatten(s)),
-        );
+        return Object.assign({}, ...style.filter(Boolean).map((s) => createStyleSheet().flatten(s)));
       }
       if (typeof style === "object") return style as Record<string, unknown>;
       return {};
@@ -140,8 +137,7 @@ export function createPermissionsAndroid() {
     checkPermission: () => Promise.resolve(true),
     request: () => Promise.resolve(RESULTS.GRANTED),
     requestPermission: () => Promise.resolve(RESULTS.GRANTED),
-    requestMultiple: (perms: string[]) =>
-      Promise.resolve(Object.fromEntries(perms.map((p) => [p, RESULTS.GRANTED]))),
+    requestMultiple: (perms: string[]) => Promise.resolve(Object.fromEntries(perms.map((p) => [p, RESULTS.GRANTED]))),
   };
 }
 
@@ -234,8 +230,7 @@ export function createMiscApis(React: typeof ReactNS) {
     bezier: (_x1: number, _y1: number, _x2: number, _y2: number) => (t: number) => t,
     in: (f: (t: number) => number) => f,
     out: (f: (t: number) => number) => (t: number) => 1 - f(1 - t),
-    inOut: (f: (t: number) => number) => (t: number) =>
-      t < 0.5 ? f(t * 2) / 2 : 1 - f((1 - t) * 2) / 2,
+    inOut: (f: (t: number) => number) => (t: number) => (t < 0.5 ? f(t * 2) / 2 : 1 - f((1 - t) * 2) / 2),
     step0: (n: number) => (n > 0 ? 1 : 0),
     step1: (n: number) => (n >= 1 ? 1 : 0),
   };
@@ -368,8 +363,7 @@ export function createMiscApis(React: typeof ReactNS) {
   const unstable_NativeText = createHostComponent(React, "Text");
   const unstable_NativeView = createHostComponent(React, "View");
   const unstable_TextAncestorContext = React.createContext(false);
-  const experimental_LayoutConformance = ({ children }: { children?: ReactNS.ReactNode }) =>
-    children ?? null;
+  const experimental_LayoutConformance = ({ children }: { children?: ReactNS.ReactNode }) => children ?? null;
 
   const unstable_VirtualArray = null;
   const unstable_VirtualColumn = null;

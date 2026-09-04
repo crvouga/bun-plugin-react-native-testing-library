@@ -6,16 +6,7 @@
 
 import { describe, expect, test } from "bun:test";
 import { useState } from "react";
-import {
-  Button,
-  Pressable,
-  Switch,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  ScrollView,
-  View,
-} from "react-native";
+import { Button, Pressable, Switch, Text, TextInput, TouchableOpacity, ScrollView, View } from "react-native";
 import { render, fireEvent } from "@testing-library/react-native";
 import * as fc from "fast-check";
 import { fcOpts } from "../fc-opts.ts";
@@ -24,9 +15,7 @@ describe("property: interactions", () => {
   test("press on Pressable/Touchable/Button calls onPress unless disabled", async () => {
     await fc.assert(
       fc.asyncProperty(
-        fc.constantFrom("pressable", "touchable", "button") as fc.Arbitrary<
-          "pressable" | "touchable" | "button"
-        >,
+        fc.constantFrom("pressable", "touchable", "button") as fc.Arbitrary<"pressable" | "touchable" | "button">,
         fc.boolean(),
         async (variant, disabled) => {
           let presses = 0;
@@ -36,12 +25,7 @@ describe("property: interactions", () => {
 
           const el =
             variant === "pressable" ? (
-              <Pressable
-                testID="t"
-                disabled={disabled}
-                onPress={onPress}
-                accessibilityRole="button"
-              >
+              <Pressable testID="t" disabled={disabled} onPress={onPress} accessibilityRole="button">
                 <Text>Go</Text>
               </Pressable>
             ) : variant === "touchable" ? (

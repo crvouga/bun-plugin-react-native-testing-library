@@ -1,10 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { Text, View } from "react-native";
 import { render } from "@testing-library/react-native";
-import {
-  SafeAreaProvider,
-  useSafeAreaInsets,
-} from "react-native-safe-area-context";
+import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
 import * as fc from "fast-check";
 
 function InsetsLabel() {

@@ -64,11 +64,8 @@ describe("createReactNativePlugin factory", () => {
       path: string;
       importer?: string;
       namespace?: string;
-    }) => { path: string; namespace?: string } | undefined | void;
-    type LoadCb = (args: { path: string }) =>
-      | { contents: string; loader: string }
-      | undefined
-      | void;
+    }) => { path: string; namespace?: string } | undefined | undefined;
+    type LoadCb = (args: { path: string }) => { contents: string; loader: string } | undefined | undefined;
 
     const resolveCbs: ResolveCb[] = [];
     const loadCbs: Array<{ opts: { filter: RegExp; namespace?: string }; cb: LoadCb }> = [];

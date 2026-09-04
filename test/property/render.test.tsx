@@ -8,12 +8,13 @@ import { TodoList } from "../example-app/TodoList.tsx";
 import { fcOpts } from "../fc-opts.ts";
 
 /** Printable strings safe for RN Text — allow unicode/emoji/RTL, ban C0 controls. */
-const rnString = fc
-  .string({ minLength: 0, maxLength: 24 })
-  .filter((s) => ![...s].some((ch) => {
-    const c = ch.codePointAt(0)!;
-    return (c < 0x20 && c !== 0x09 && c !== 0x0a) || c === 0x7f;
-  }));
+const rnString = fc.string({ minLength: 0, maxLength: 24 }).filter(
+  (s) =>
+    ![...s].some((ch) => {
+      const c = ch.codePointAt(0)!;
+      return (c < 0x20 && c !== 0x09 && c !== 0x0a) || c === 0x7f;
+    }),
+);
 
 describe("property: Greeting rendering via RNTL", () => {
   test("getByText succeeds for non-empty trimmed names; empty-state otherwise", async () => {

@@ -29,9 +29,9 @@ describe("contract: library registry", () => {
   });
 
   test("libraryMocks: unknown name throws", () => {
-    expect(() =>
-      registerLibraryMocks(resolveConfig({ libraryMocks: ["not-a-real-shim"] })),
-    ).toThrow(/Unknown libraryMocks/);
+    expect(() => registerLibraryMocks(resolveConfig({ libraryMocks: ["not-a-real-shim"] }))).toThrow(
+      /Unknown libraryMocks/,
+    );
   });
 
   test("parseLibraryMocksEnv", () => {
@@ -42,9 +42,7 @@ describe("contract: library registry", () => {
   });
 
   test("libraryMocks list filters to requested names only", () => {
-    const result = registerLibraryMocks(
-      resolveConfig({ libraryMocks: ["reanimated", "worklets"] }),
-    );
+    const result = registerLibraryMocks(resolveConfig({ libraryMocks: ["reanimated", "worklets"] }));
     for (const a of result.activated) {
       expect(["reanimated", "worklets"]).toContain(a);
     }

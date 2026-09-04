@@ -18,11 +18,7 @@ const SOURCE_EXTS = [".js", ".jsx", ".ts", ".tsx", ".json"] as const;
  * Build the ordered list of candidate absolute paths for a bare specifier
  * relative to `importerDir`, without checking existence.
  */
-export function candidatePaths(
-  specifier: string,
-  importerDir: string,
-  platform: Platform,
-): string[] {
+export function candidatePaths(specifier: string, importerDir: string, platform: Platform): string[] {
   // Only relative imports participate in platform resolution.
   if (!(specifier.startsWith("./") || specifier.startsWith("../") || path.isAbsolute(specifier))) {
     return [];
@@ -118,10 +114,7 @@ export function resolveAgainstMap(
   platform: Platform,
   fileMap: ReadonlySet<string> | ReadonlyMap<string, unknown>,
 ): string | null {
-  const exists =
-    fileMap instanceof Set
-      ? (p: string) => fileMap.has(p)
-      : (p: string) => fileMap.has(p);
+  const exists = fileMap instanceof Set ? (p: string) => fileMap.has(p) : (p: string) => fileMap.has(p);
   return resolvePlatformFile(specifier, importerDir, platform, exists);
 }
 
@@ -132,8 +125,6 @@ export function resolveAgainstMap(
  * Order: `.${platform}` → `.native` → `` (plain) ; within each, SOURCE_EXTS order.
  */
 export function priorityRank(resolvedPath: string, baseAbs: string, platform: Platform): number {
-  const candidates = candidatePaths(baseAbs.startsWith(".") ? baseAbs : `./${path.basename(baseAbs)}`, path.dirname(baseAbs), platform);
-  // Rebuild with absolute base for ranking:
   const ranked = candidatePaths(
     path.isAbsolute(baseAbs) ? baseAbs : `./${path.basename(baseAbs)}`,
     path.dirname(baseAbs),
@@ -153,9 +144,7 @@ export function brokenResolveSkipNative(
   platform: Platform,
   exists: ExistsFn,
 ): string | null {
-  const candidates = candidatePaths(specifier, importerDir, platform).filter(
-    (c) => !c.includes(".native."),
-  );
+  const candidates = candidatePaths(specifier, importerDir, platform).filter((c) => !c.includes(".native."));
   for (const c of candidates) {
     if (exists(c)) return c;
   }

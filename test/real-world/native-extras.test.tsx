@@ -22,9 +22,7 @@ describe("webview / linear-gradient / device-info", () => {
       fc.asyncProperty(
         fc.array(fc.constantFrom("#f00", "#0f0", "#00f", "#fff"), { minLength: 2, maxLength: 4 }),
         async (colors) => {
-          const screen = await render(
-            <LinearGradient testID="grad" colors={colors} style={{ flex: 1 }} />,
-          );
+          const screen = await render(<LinearGradient testID="grad" colors={colors} style={{ flex: 1 }} />);
           expect(screen.getByTestId("grad")).toBeTruthy();
           screen.unmount();
         },

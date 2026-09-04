@@ -4,16 +4,7 @@
 
 import { describe, expect, test } from "bun:test";
 import * as React from "react";
-import {
-  View,
-  Text,
-  Pressable,
-  TextInput,
-  Switch,
-  Image,
-  ScrollView,
-  Modal,
-} from "react-native";
+import { View, Text, Pressable, TextInput, Switch, Image, ScrollView, Modal } from "react-native";
 import { render } from "@testing-library/react-native";
 import * as fc from "fast-check";
 import { fcOpts } from "../fc-opts.ts";
@@ -46,15 +37,15 @@ const leafArb: fc.Arbitrary<ModelNode> = fc.oneof(
   idArb.chain((testID) => textArb.map((value) => ({ kind: "text" as const, testID, value }))),
   idArb.map((testID) => ({ kind: "image" as const, testID })),
   idArb.chain((testID) =>
-    fc.record({
-      testID: fc.constant(testID),
-      label: textArb,
-      disabled: fc.boolean(),
-    }).map((r) => ({ kind: "pressable" as const, ...r })),
+    fc
+      .record({
+        testID: fc.constant(testID),
+        label: textArb,
+        disabled: fc.boolean(),
+      })
+      .map((r) => ({ kind: "pressable" as const, ...r })),
   ),
-  idArb.chain((testID) =>
-    textArb.map((value) => ({ kind: "input" as const, testID, value })),
-  ),
+  idArb.chain((testID) => textArb.map((value) => ({ kind: "input" as const, testID, value }))),
   idArb.chain((testID) =>
     fc.record({ value: fc.boolean(), disabled: fc.boolean() }).map((r) => ({
       kind: "switch" as const,
@@ -69,20 +60,26 @@ function makeTreeArb(depth: number): fc.Arbitrary<ModelNode> {
   const child = makeTreeArb(depth - 1);
   return fc.oneof(
     leafArb,
-    fc.record({
-      testID: idArb,
-      children: fc.array(child, { minLength: 0, maxLength: 3 }),
-      hidden: fc.boolean(),
-    }).map((r) => ({ kind: "view" as const, ...r })),
-    fc.record({
-      testID: idArb,
-      children: fc.array(child, { minLength: 0, maxLength: 2 }),
-    }).map((r) => ({ kind: "scroll" as const, ...r })),
-    fc.record({
-      testID: idArb,
-      visible: fc.boolean(),
-      children: fc.array(leafArb, { minLength: 0, maxLength: 2 }),
-    }).map((r) => ({ kind: "modal" as const, ...r })),
+    fc
+      .record({
+        testID: idArb,
+        children: fc.array(child, { minLength: 0, maxLength: 3 }),
+        hidden: fc.boolean(),
+      })
+      .map((r) => ({ kind: "view" as const, ...r })),
+    fc
+      .record({
+        testID: idArb,
+        children: fc.array(child, { minLength: 0, maxLength: 2 }),
+      })
+      .map((r) => ({ kind: "scroll" as const, ...r })),
+    fc
+      .record({
+        testID: idArb,
+        visible: fc.boolean(),
+        children: fc.array(leafArb, { minLength: 0, maxLength: 2 }),
+      })
+      .map((r) => ({ kind: "modal" as const, ...r })),
   );
 }
 
@@ -139,20 +136,10 @@ function toElement(node: ModelNode): React.ReactElement {
     case "input":
       return <TextInput testID={node.testID} value={node.value} onChangeText={() => {}} />;
     case "switch":
-      return (
-        <Switch
-          testID={node.testID}
-          value={node.value}
-          disabled={node.disabled}
-          onValueChange={() => {}}
-        />
-      );
+      return <Switch testID={node.testID} value={node.value} disabled={node.disabled} onValueChange={() => {}} />;
     case "view":
       return (
-        <View
-          testID={node.testID}
-          style={node.hidden ? { display: "none" } : undefined}
-        >
+        <View testID={node.testID} style={node.hidden ? { display: "none" } : undefined}>
           {node.children.map((c, i) => (
             <React.Fragment key={i}>{toElement(c)}</React.Fragment>
           ))}
@@ -175,18 +162,6 @@ function toElement(node: ModelNode): React.ReactElement {
         </Modal>
       );
   }
-}
-
-function collectTestIds(node: ModelNode, out: string[] = []): string[] {
-  out.push(node.testID);
-  if ("children" in node && Array.isArray(node.children)) {
-    for (const c of node.children) collectTestIds(c, out);
-  }
-  // Modal with visible=false is not on screen
-  if (node.kind === "modal" && !node.visible) {
-    return out.filter((id) => id === node.testID); // modal host itself may be absent
-  }
-  return out;
 }
 
 function collectVisibleTestIds(node: ModelNode, out: string[] = []): string[] {
@@ -227,45 +202,46 @@ function collectHostTypes(json: unknown, out: string[] = []): string[] {
 describe("property: RN tree vs RNTL queries", () => {
   test("testIDs / text / host types / disabled / checked agree with model", async () => {
     await fc.assert(
-      fc.asyncProperty(makeTreeArb(2).map((n) => dedupeIds(n)), async (model) => {
-        const { getByTestId, queryByTestId, getByText, toJSON, unmount } = await render(
-          toElement(model),
-        );
+      fc.asyncProperty(
+        makeTreeArb(2).map((n) => dedupeIds(n)),
+        async (model) => {
+          const { getByTestId, queryByTestId, getByText, toJSON, unmount } = await render(toElement(model));
 
-        const visibleIds = collectVisibleTestIds(model);
-        for (const id of visibleIds) {
-          if (model.kind === "modal" && id === model.testID && model.visible) {
-            expect(getByTestId(id)).toBeTruthy();
-          } else if (!(model.kind === "modal" && !model.visible && id === model.testID)) {
-            expect(queryByTestId(id)).toBeTruthy();
+          const visibleIds = collectVisibleTestIds(model);
+          for (const id of visibleIds) {
+            if (model.kind === "modal" && id === model.testID && model.visible) {
+              expect(getByTestId(id)).toBeTruthy();
+            } else if (!(model.kind === "modal" && !model.visible && id === model.testID)) {
+              expect(queryByTestId(id)).toBeTruthy();
+            }
           }
-        }
 
-        for (const t of collectTextLeaves(model)) {
-          if (t.length > 0) expect(getByText(t)).toBeTruthy();
-        }
-
-        const hosts = collectHostTypes(toJSON());
-        for (const h of hosts) {
-          expect(h).not.toBe("Pressable");
-          void HOST_NAMES;
-        }
-
-        const walk = (n: ModelNode) => {
-          if (n.kind === "modal" && !n.visible) return;
-          if (n.kind === "view" && n.hidden) return;
-          if (n.kind === "pressable" && n.disabled) {
-            expect(getByTestId(n.testID)).toBeDisabled();
+          for (const t of collectTextLeaves(model)) {
+            if (t.length > 0) expect(getByText(t)).toBeTruthy();
           }
-          if (n.kind === "switch" && !n.disabled) {
-            if (n.value) expect(getByTestId(n.testID)).toBeChecked();
-          }
-          if ("children" in n) for (const c of n.children) walk(c);
-        };
-        walk(model);
 
-        unmount();
-      }),
+          const hosts = collectHostTypes(toJSON());
+          for (const h of hosts) {
+            expect(h).not.toBe("Pressable");
+            void HOST_NAMES;
+          }
+
+          const walk = (n: ModelNode) => {
+            if (n.kind === "modal" && !n.visible) return;
+            if (n.kind === "view" && n.hidden) return;
+            if (n.kind === "pressable" && n.disabled) {
+              expect(getByTestId(n.testID)).toBeDisabled();
+            }
+            if (n.kind === "switch" && !n.disabled) {
+              if (n.value) expect(getByTestId(n.testID)).toBeChecked();
+            }
+            if ("children" in n) for (const c of n.children) walk(c);
+          };
+          walk(model);
+
+          unmount();
+        },
+      ),
       fcOpts,
     );
   });

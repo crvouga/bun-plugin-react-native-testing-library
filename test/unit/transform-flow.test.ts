@@ -26,24 +26,17 @@ describe("transform-flow.ts", () => {
     // Runtime semantics preserved (RN preset emits CJS)
     const module = { exports: {} as Record<string, unknown> };
     // eslint-disable-next-line no-new-func
-    new Function("module", "exports", "require", out)(
-      module,
-      module.exports,
-      (id: string) => {
-        if (id === "react") return {};
-        throw new Error(`unexpected require: ${id}`);
-      },
-    );
-    const fn = (module.exports as {
+    new Function("module", "exports", "require", out)(module, module.exports, (id: string) => {
+      if (id === "react") return {};
+      throw new Error(`unexpected require: ${id}`);
+    });
+    const fn = module.exports as {
       greet?: (p: { name: string; count: number }) => string;
       add?: (a: number, b: number) => number;
-    });
+    };
     // Named exports may be on module.exports directly after CJS transform
-    const greet =
-      fn.greet ??
-      (module.exports as { greet: (p: { name: string; count: number }) => string }).greet;
-    const add =
-      fn.add ?? (module.exports as { add: (a: number, b: number) => number }).add;
+    const greet = fn.greet ?? (module.exports as { greet: (p: { name: string; count: number }) => string }).greet;
+    const add = fn.add ?? (module.exports as { add: (a: number, b: number) => number }).add;
     expect(typeof add).toBe("function");
     expect(typeof greet).toBe("function");
     expect(add!(2, 3)).toBe(5);

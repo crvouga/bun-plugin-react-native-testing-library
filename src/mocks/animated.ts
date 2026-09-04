@@ -68,10 +68,7 @@ export class AnimatedInterpolation {
     outputRange: Array<number | string>;
   };
 
-  constructor(
-    parent: AnimatedValue,
-    config: { inputRange: number[]; outputRange: Array<number | string> },
-  ) {
+  constructor(parent: AnimatedValue, config: { inputRange: number[]; outputRange: Array<number | string> }) {
     this.#parent = parent;
     this.#config = config;
   }
@@ -98,10 +95,7 @@ export class AnimatedInterpolation {
     return outputRange[0]!;
   }
 
-  interpolate(config: {
-    inputRange: number[];
-    outputRange: Array<number | string>;
-  }): AnimatedInterpolation {
+  interpolate(config: { inputRange: number[]; outputRange: Array<number | string> }): AnimatedInterpolation {
     // Chain: evaluate parent then map — simplified as new node from parent value
     return new AnimatedInterpolation(this.#parent, config);
   }
@@ -151,9 +145,7 @@ export class AnimatedValueXY {
   }
 
   addListener(cb: (v: { x: number; y: number }) => void): string {
-    const id = this.x.addListener(() =>
-      cb({ x: this.x.__getValue(), y: this.y.__getValue() }),
-    );
+    const id = this.x.addListener(() => cb({ x: this.x.__getValue(), y: this.y.__getValue() }));
     this.y.addListener(() => cb({ x: this.x.__getValue(), y: this.y.__getValue() }));
     return id;
   }

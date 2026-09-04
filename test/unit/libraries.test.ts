@@ -39,9 +39,7 @@ describe("libraries coverage", () => {
     const prev = process.cwd();
     try {
       process.chdir(SANDBOX);
-      const result = registerLibraryMocks(
-        resolveConfig({ libraryMocks: "auto", debug: false }),
-      );
+      const result = registerLibraryMocks(resolveConfig({ libraryMocks: "auto", debug: false }));
       expect(result.activated.length).toBeGreaterThan(5);
       expect(LIBRARY_REGISTRY.every((s) => result.activated.includes(s.name) || result.skipped.includes(s.name))).toBe(
         true,

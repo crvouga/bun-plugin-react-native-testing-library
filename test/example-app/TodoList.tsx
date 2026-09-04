@@ -30,12 +30,7 @@ export function TodoList({ initial = [] }: TodoListProps) {
         placeholder="Add a todo"
         accessibilityLabel="todo input"
       />
-      <Pressable
-        testID="todo-add"
-        accessibilityRole="button"
-        accessibilityLabel="add todo"
-        onPress={add}
-      >
+      <Pressable testID="todo-add" accessibilityRole="button" accessibilityLabel="add todo" onPress={add}>
         <Text>Add</Text>
       </Pressable>
       <FlatList

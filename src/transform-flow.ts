@@ -49,7 +49,8 @@ export function transformFlow(code: string, opts: TransformOptions): string {
     ],
     caller: {
       name: "bun-plugin-react-native-testing-library",
-      platform: opts.platform ?? "ios",
+      // RN babel preset reads `platform` off the caller object at runtime.
+      ...({ platform: opts.platform ?? "ios" } as Record<string, string>),
     },
   });
 
@@ -74,13 +75,7 @@ export type TransformCache = {
   clear: () => void;
 };
 
-function cacheKey(parts: {
-  path: string;
-  mtimeMs: number;
-  size: number;
-  version: string;
-  platform: string;
-}): string {
+function cacheKey(parts: { path: string; mtimeMs: number; size: number; version: string; platform: string }): string {
   return createHash("sha1")
     .update(
       [
@@ -125,10 +120,7 @@ export function createTransformCache(options: CacheOptions = {}): TransformCache
     }
   }
 
-  function transform(
-    code: string,
-    opts: TransformOptions & { mtimeMs?: number; size?: number },
-  ): TransformResult {
+  function transform(code: string, opts: TransformOptions & { mtimeMs?: number; size?: number }): TransformResult {
     const started = performance.now();
     let mtimeMs = opts.mtimeMs;
     let size = opts.size;

@@ -18,13 +18,16 @@
     "README.md"
   ],
   "scripts": {
-    "test": "bun test --bail test/unit test/property test/contract test/example-app",
-    "test:integration": "bun test --bail test/integration",
-    "test:all": "bun test --bail test/unit test/property test/contract test/example-app test/integration",
-    "test:coverage": "bun test --bail --coverage test/unit test/property test/contract test/example-app",
+    "test": "bun test --bail",
+    "test:coverage": "bun test --bail --coverage",
     "test:real-world": "bun test --bail --cwd test/real-world",
-    "test:soak": "RN_BUN_FC_RUNS=100 bun test --bail test/unit test/property test/contract test/example-app",
-    "typecheck": "tsc --noEmit"
+    "test:soak": "RN_BUN_FC_RUNS=100 bun test --bail",
+    "typecheck": "tsc --noEmit",
+    "format": "biome format --write .",
+    "format:check": "biome format .",
+    "lint": "biome lint --error-on-warnings .",
+    "lint:fix": "biome lint --write --error-on-warnings .",
+    "check": "bun run format:check && bun run lint && bun run typecheck && bun run test"
   },
   "peerDependencies": {
     "@testing-library/react-native": ">=14.0.0",
@@ -37,6 +40,7 @@
     "@react-native/babel-preset": "0.87.1"
   },
   "devDependencies": {
+    "@biomejs/biome": "2.5.8",
     "@testing-library/react-native": "14.0.1",
     "@types/babel__core": "^7.20.5",
     "@types/bun": "latest",

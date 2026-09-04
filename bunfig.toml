@@ -1,5 +1,6 @@
 [test]
 preload = ["./src/preload.ts"]
+# Consumer sandbox has its own package.json / bunfig; run via test/integration spawn.
+pathIgnorePatterns = ["test/real-world/**"]
 
-# Coverage is enabled via `bun test --coverage` (see package.json scripts).
-# Ignore test fixtures and node_modules when collecting.
+# Coverage: `bun test --coverage` (see package.json).

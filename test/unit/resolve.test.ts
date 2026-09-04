@@ -1,11 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import path from "node:path";
-import {
-  brokenResolveSkipNative,
-  candidatePaths,
-  resolveAgainstMap,
-  resolvePlatformFile,
-} from "../../src/resolve.ts";
+import { brokenResolveSkipNative, candidatePaths, resolveAgainstMap, resolvePlatformFile } from "../../src/resolve.ts";
 
 const DIR = "/proj/src";
 
@@ -31,9 +26,7 @@ describe("resolve.ts Metro platform resolution", () => {
 
   test("android: prefers .android over .native over plain", () => {
     const files = mapOf("Foo.android.js", "Foo.native.js", "Foo.js");
-    expect(resolveAgainstMap("./Foo", DIR, "android", files)).toBe(
-      path.join(DIR, "Foo.android.js"),
-    );
+    expect(resolveAgainstMap("./Foo", DIR, "android", files)).toBe(path.join(DIR, "Foo.android.js"));
   });
 
   test("extension priority within a platform suffix (.js before later? — .js first in list)", () => {
@@ -43,9 +36,7 @@ describe("resolve.ts Metro platform resolution", () => {
 
   test("index resolution", () => {
     const files = mapOf("widgets/index.ios.ts", "widgets/index.ts");
-    expect(resolveAgainstMap("./widgets", DIR, "ios", files)).toBe(
-      path.join(DIR, "widgets/index.ios.ts"),
-    );
+    expect(resolveAgainstMap("./widgets", DIR, "ios", files)).toBe(path.join(DIR, "widgets/index.ios.ts"));
   });
 
   test("returns null when nothing exists", () => {

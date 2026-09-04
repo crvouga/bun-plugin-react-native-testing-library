@@ -9,14 +9,7 @@ import { describe, expect, test } from "bun:test";
 import { createElement } from "react";
 import { Pressable, Text, View } from "react-native";
 import { render } from "@testing-library/react-native";
-import {
-  existsSync,
-  mkdirSync,
-  rmSync,
-  writeFileSync,
-  cpSync,
-  readFileSync,
-} from "node:fs";
+import { existsSync, mkdirSync, rmSync, writeFileSync, cpSync, readFileSync } from "node:fs";
 import path from "node:path";
 
 const ROOT = path.resolve(import.meta.dir, "../..");
@@ -70,8 +63,7 @@ async function ensureCachedInstall(): Promise<void> {
   const prev = existsSync(pkgPath) ? readFileSync(pkgPath, "utf8") : "";
   writeFileSync(pkgPath, next);
 
-  const needsInstall =
-    !existsSync(path.join(CACHE, "node_modules")) || prev !== next;
+  const needsInstall = !existsSync(path.join(CACHE, "node_modules")) || prev !== next;
   if (!needsInstall) return;
 
   const install = Bun.spawn({
@@ -96,9 +88,7 @@ function syncExampleApp(): void {
 function writeBunfig(withPreload: boolean): void {
   writeFileSync(
     path.join(CACHE, "bunfig.toml"),
-    withPreload
-      ? `[test]\npreload = ["bun-plugin-react-native-testing-library/preload"]\n`
-      : `[test]\n`,
+    withPreload ? `[test]\npreload = ["bun-plugin-react-native-testing-library/preload"]\n` : `[test]\n`,
   );
 }
 

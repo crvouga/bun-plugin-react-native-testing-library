@@ -95,10 +95,8 @@ export function createKeyboard(emitter: EventEmitter) {
     isVisible: () => false,
     metrics: () => null,
     scheduleLayoutAnimation: noop,
-    addListener: (event: string, handler: (...args: unknown[]) => void) =>
-      emitter.addListener(event, handler),
-    removeListener: (event: string, handler: (...args: unknown[]) => void) =>
-      emitter.removeListener(event, handler),
+    addListener: (event: string, handler: (...args: unknown[]) => void) => emitter.addListener(event, handler),
+    removeListener: (event: string, handler: (...args: unknown[]) => void) => emitter.removeListener(event, handler),
     removeAllListeners: (event?: string) => emitter.removeAllListeners(event),
   };
 }
@@ -106,8 +104,7 @@ export function createKeyboard(emitter: EventEmitter) {
 export function createBackHandler(emitter: EventEmitter) {
   return {
     exitApp: noop,
-    addEventListener: (event: string, handler: (...args: unknown[]) => void) =>
-      emitter.addListener(event, handler),
+    addEventListener: (event: string, handler: (...args: unknown[]) => void) => emitter.addListener(event, handler),
     removeEventListener: (event: string, handler: (...args: unknown[]) => void) =>
       emitter.removeListener(event, handler),
   };
@@ -123,15 +120,13 @@ export function createAppStateWithEmitter(emitter: EventEmitter) {
       currentState = v;
     },
     isAvailable: true,
-    addEventListener: (event: string, handler: (...args: unknown[]) => void) =>
-      emitter.addListener(event, handler),
+    addEventListener: (event: string, handler: (...args: unknown[]) => void) => emitter.addListener(event, handler),
   };
 }
 
 export function createLinkingWithEmitter(emitter: EventEmitter) {
   return {
-    addEventListener: (event: string, handler: (...args: unknown[]) => void) =>
-      emitter.addListener(event, handler),
+    addEventListener: (event: string, handler: (...args: unknown[]) => void) => emitter.addListener(event, handler),
     openURL: (url: string) => Promise.resolve(url.length > 0),
     canOpenURL: () => Promise.resolve(true),
     openSettings: () => Promise.resolve(),

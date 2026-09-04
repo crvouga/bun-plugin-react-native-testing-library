@@ -41,44 +41,41 @@ describe("property: Animated", () => {
 
   test("compositions invoke start callback exactly once with finished:true", () => {
     fc.assert(
-      fc.property(
-        fc.constantFrom("sequence", "parallel", "stagger", "loop", "timing", "spring", "delay"),
-        (kind) => {
-          const v = new Animated.Value(0);
-          const a = Animated.timing(v, { toValue: 1, duration: 100, useNativeDriver: false });
-          let anim;
-          switch (kind) {
-            case "sequence":
-              anim = Animated.sequence([a, a]);
-              break;
-            case "parallel":
-              anim = Animated.parallel([a, a]);
-              break;
-            case "stagger":
-              anim = Animated.stagger(10, [a, a]);
-              break;
-            case "loop":
-              anim = Animated.loop(a, { iterations: 1 });
-              break;
-            case "delay":
-              anim = Animated.delay(1);
-              break;
-            case "spring":
-              anim = Animated.spring(v, { toValue: 1, useNativeDriver: false });
-              break;
-            default:
-              anim = a;
-          }
-          let calls = 0;
-          let finished = false;
-          anim.start(({ finished: f }) => {
-            calls++;
-            finished = f;
-          });
-          expect(calls).toBe(1);
-          expect(finished).toBe(true);
-        },
-      ),
+      fc.property(fc.constantFrom("sequence", "parallel", "stagger", "loop", "timing", "spring", "delay"), (kind) => {
+        const v = new Animated.Value(0);
+        const a = Animated.timing(v, { toValue: 1, duration: 100, useNativeDriver: false });
+        let anim;
+        switch (kind) {
+          case "sequence":
+            anim = Animated.sequence([a, a]);
+            break;
+          case "parallel":
+            anim = Animated.parallel([a, a]);
+            break;
+          case "stagger":
+            anim = Animated.stagger(10, [a, a]);
+            break;
+          case "loop":
+            anim = Animated.loop(a, { iterations: 1 });
+            break;
+          case "delay":
+            anim = Animated.delay(1);
+            break;
+          case "spring":
+            anim = Animated.spring(v, { toValue: 1, useNativeDriver: false });
+            break;
+          default:
+            anim = a;
+        }
+        let calls = 0;
+        let finished = false;
+        anim.start(({ finished: f }) => {
+          calls++;
+          finished = f;
+        });
+        expect(calls).toBe(1);
+        expect(finished).toBe(true);
+      }),
       fcOpts,
     );
   });
@@ -132,8 +129,7 @@ describe("property: StyleSheet / Platform / APIs", () => {
         (os, spec) => {
           const P = createPlatform(os);
           const got = P.select(spec);
-          const expected =
-            spec[os] !== undefined ? spec[os] : spec.native !== undefined ? spec.native : spec.default;
+          const expected = spec[os] !== undefined ? spec[os] : spec.native !== undefined ? spec.native : spec.default;
           expect(got).toBe(expected);
         },
       ),

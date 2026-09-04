@@ -72,23 +72,14 @@ export function createReactNativePlugin(options: PluginOptions = {}): BunPlugin 
       build.onResolve({ filter: /.*/ }, (args) => {
         if (!isRelativeSpecifier(args.path)) {
           // Namespace rewrite for absolute paths already resolved into RN.
-          if (
-            strategy === "namespace" &&
-            path.isAbsolute(args.path) &&
-            shouldTransform(args.path, config)
-          ) {
+          if (strategy === "namespace" && path.isAbsolute(args.path) && shouldTransform(args.path, config)) {
             return { path: args.path, namespace: FLOW_NAMESPACE };
           }
           return;
         }
 
         const importerDir = args.importer ? path.dirname(args.importer) : process.cwd();
-        const resolved = resolvePlatformFile(
-          args.path,
-          importerDir,
-          config.platform,
-          existsSync,
-        );
+        const resolved = resolvePlatformFile(args.path, importerDir, config.platform, existsSync);
 
         if (resolved) {
           if (strategy === "namespace" && shouldTransform(resolved, config)) {
@@ -182,10 +173,7 @@ export function createReactNativePlugin(options: PluginOptions = {}): BunPlugin 
       };
 
       if (strategy === "direct") {
-        build.onLoad(
-          { filter: /node_modules\/(react-native|@react-native)\// },
-          loadHandler,
-        );
+        build.onLoad({ filter: /node_modules\/(react-native|@react-native)\// }, loadHandler);
       } else {
         build.onLoad({ filter: /.*/, namespace: FLOW_NAMESPACE }, loadHandler);
       }

@@ -10,11 +10,12 @@
     "skipLibCheck": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
+    "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
     "types": ["bun"]
   },
-  "include": ["src/**/*", "test/**/*"],
-  "exclude": ["node_modules", "test/example-app"]
+  "include": ["src/**/*"],
+  "exclude": ["node_modules"]
 }

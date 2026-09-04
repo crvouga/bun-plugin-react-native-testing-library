@@ -79,8 +79,8 @@ export const workletsShim: LibraryShim = {
   packages: ["react-native-worklets"],
   register({ cwd, config }) {
     const factory = () => {
-      const official = tryRequire("react-native-worklets/src/mock", cwd)
-        ?? tryRequire("react-native-worklets/lib/module/mock", cwd);
+      const official =
+        tryRequire("react-native-worklets/src/mock", cwd) ?? tryRequire("react-native-worklets/lib/module/mock", cwd);
       if (official) return official;
       if (config.debug) {
         console.warn("[rn-bun] worklets mock missing; using JS fallback");

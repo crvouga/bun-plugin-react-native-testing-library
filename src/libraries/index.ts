@@ -53,9 +53,7 @@ export function registerLibraryMocks(config: ResolvedConfig): RegisterLibraryMoc
     const known = new Set(LIBRARY_REGISTRY.map((s) => s.name));
     const unknown = option.filter((n) => !known.has(n));
     if (unknown.length > 0) {
-      throw new Error(
-        `[rn-bun] Unknown libraryMocks entries: ${unknown.join(", ")}. Known: ${[...known].join(", ")}`,
-      );
+      throw new Error(`[rn-bun] Unknown libraryMocks entries: ${unknown.join(", ")}. Known: ${[...known].join(", ")}`);
     }
   }
 

@@ -79,10 +79,6 @@ export const deviceInfoShim: LibraryShim = {
       getTotalMemory: async () => 8 * 1024 ** 3,
       getUsedMemory: async () => 2 * 1024 ** 3,
     };
-    mockBoth(
-      "react-native-device-info",
-      () => ({ default: constants, ...constants, __esModule: true }),
-      cwd,
-    );
+    mockBoth("react-native-device-info", () => ({ default: constants, ...constants, __esModule: true }), cwd);
   },
 };

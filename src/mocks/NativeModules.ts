@@ -15,8 +15,7 @@ export function createNativeModules(window: WindowMetrics) {
   return {
     AlertManager: { alertWithArgs: noop },
     AsyncLocalStorage: {
-      multiGet: (_keys: unknown, cb: (err: null, result: unknown[]) => void) =>
-        process.nextTick(() => cb(null, [])),
+      multiGet: (_keys: unknown, cb: (err: null, result: unknown[]) => void) => process.nextTick(() => cb(null, [])),
       multiSet: (_e: unknown, cb: (err: null) => void) => process.nextTick(() => cb(null)),
       multiRemove: (_k: unknown, cb: (err: null) => void) => process.nextTick(() => cb(null)),
       multiMerge: (_e: unknown, cb: (err: null) => void) => process.nextTick(() => cb(null)),
@@ -37,8 +36,7 @@ export function createNativeModules(window: WindowMetrics) {
       queryCache: noop,
     },
     ImageViewManager: {
-      getSize: (_uri: string, success: (w: number, h: number) => void) =>
-        process.nextTick(() => success(320, 240)),
+      getSize: (_uri: string, success: (w: number, h: number) => void) => process.nextTick(() => success(320, 240)),
       prefetchImage: noop,
     },
     KeyboardObserver: { addListener: noop, removeListeners: noop },
@@ -99,8 +97,7 @@ export function createNativeModules(window: WindowMetrics) {
       getScheduledLocalNotifications: (cb: (n: unknown[]) => void) => cb([]),
       requestPermissions: () => Promise.resolve({ alert: true, badge: true, sound: true }),
       abandonPermissions: noop,
-      checkPermissions: (cb: (p: unknown) => void) =>
-        cb({ alert: true, badge: true, sound: true }),
+      checkPermissions: (cb: (p: unknown) => void) => cb({ alert: true, badge: true, sound: true }),
       getInitialNotification: () => Promise.resolve(null),
       addListener: noop,
       removeListeners: noop,

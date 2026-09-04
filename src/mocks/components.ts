@@ -67,13 +67,8 @@ export function createComponents(React: typeof ReactNS) {
 
   const Image = createHostComponent(React, "Image", {
     statics: {
-      getSize: (_u: string, ok: (w: number, h: number) => void, _err?: (e: Error) => void) =>
-        ok(320, 240),
-      getSizeWithHeaders: (
-        _u: string,
-        _h: unknown,
-        ok: (w: number, h: number) => void,
-      ) => ok(320, 240),
+      getSize: (_u: string, ok: (w: number, h: number) => void, _err?: (e: Error) => void) => ok(320, 240),
+      getSizeWithHeaders: (_u: string, _h: unknown, ok: (w: number, h: number) => void) => ok(320, 240),
       prefetch: () => Promise.resolve(true),
       abortPrefetch: noop,
       queryCache: () => Promise.resolve({}),
@@ -95,12 +90,7 @@ export function createComponents(React: typeof ReactNS) {
     getScrollableNode = () => null;
     render() {
       const { children, refreshControl, ...rest } = this.props;
-      return React.createElement(
-        "RCTScrollView",
-        rest,
-        refreshControl,
-        React.createElement(View, null, children),
-      );
+      return React.createElement("RCTScrollView", rest, refreshControl, React.createElement(View, null, children));
     }
   };
 
@@ -202,23 +192,27 @@ export function createComponents(React: typeof ReactNS) {
     render() {
       const { children, value, onValueChange, disabled, ...rest } = this.props;
       const isDisabled = Boolean(disabled);
-      return React.createElement("RCTSwitch", {
-        ...rest,
-        value: Boolean(value),
-        disabled: isDisabled,
-        accessibilityRole: rest.accessibilityRole ?? "switch",
-        accessibilityState: {
-          checked: Boolean(value),
+      return React.createElement(
+        "RCTSwitch",
+        {
+          ...rest,
+          value: Boolean(value),
           disabled: isDisabled,
+          accessibilityRole: rest.accessibilityRole ?? "switch",
+          accessibilityState: {
+            checked: Boolean(value),
+            disabled: isDisabled,
+          },
+          onChange: isDisabled
+            ? undefined
+            : (e: { nativeEvent?: { value?: boolean } }) => {
+                const next = e?.nativeEvent?.value ?? !value;
+                onValueChange?.(Boolean(next));
+              },
+          onValueChange: isDisabled ? undefined : onValueChange,
         },
-        onChange: isDisabled
-          ? undefined
-          : (e: { nativeEvent?: { value?: boolean } }) => {
-              const next = e?.nativeEvent?.value ?? !value;
-              onValueChange?.(Boolean(next));
-            },
-        onValueChange: isDisabled ? undefined : onValueChange,
-      }, children);
+        children,
+      );
     }
   };
 

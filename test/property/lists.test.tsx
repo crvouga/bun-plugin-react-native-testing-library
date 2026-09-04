@@ -73,12 +73,8 @@ describe("property: lists", () => {
               testID="slist"
               sections={keyed}
               keyExtractor={(item, i) => `${i}-${item}`}
-              renderItem={({ item, index, section }) => (
-                <Text testID={`item-${section.key}-${index}`}>{item}</Text>
-              )}
-              renderSectionHeader={({ section }) => (
-                <Text testID={`hdr-${section.key}`}>{section.title}</Text>
-              )}
+              renderItem={({ item, index, section }) => <Text testID={`item-${section.key}-${index}`}>{item}</Text>}
+              renderSectionHeader={({ section }) => <Text testID={`hdr-${section.key}`}>{section.title}</Text>}
             />,
           );
 

@@ -41,7 +41,7 @@ import {
   createKeyboard,
   createLinkingWithEmitter,
 } from "./events.ts";
-import { createHostComponent, noop } from "./host.ts";
+import { noop } from "./host.ts";
 import { DEFAULT_INITIAL_NUM_TO_RENDER, createLists } from "./lists.ts";
 import {
   createAccessibilityInfo,

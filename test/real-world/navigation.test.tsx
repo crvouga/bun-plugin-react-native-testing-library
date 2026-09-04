@@ -11,11 +11,7 @@ function Home({ navigation }: { navigation: { navigate: (r: string) => void } })
   return (
     <View testID="home">
       <Text>Home</Text>
-      <Text
-        testID="go-detail"
-        onPress={() => navigation.navigate("Detail")}
-        accessibilityRole="button"
-      >
+      <Text testID="go-detail" onPress={() => navigation.navigate("Detail")} accessibilityRole="button">
         Go
       </Text>
     </View>

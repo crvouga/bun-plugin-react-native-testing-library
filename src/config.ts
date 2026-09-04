@@ -126,7 +126,10 @@ export function parseLibraryMocksEnv(raw: string | undefined): LibraryMocksOptio
   const v = raw.trim().toLowerCase();
   if (v === "auto") return "auto";
   if (v === "false" || v === "off" || v === "0" || v === "none") return false;
-  return raw.split(",").map((s) => s.trim()).filter(Boolean);
+  return raw
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
 }
 
 /**
@@ -135,15 +138,11 @@ export function parseLibraryMocksEnv(raw: string | undefined): LibraryMocksOptio
  */
 export function loadConfig(): ResolvedConfig {
   const platformEnv = process.env.RN_BUN_PLATFORM;
-  const platform =
-    platformEnv === "android" || platformEnv === "ios" ? platformEnv : undefined;
-  const debug =
-    process.env.RN_BUN_DEBUG === "1" || process.env.RN_BUN_DEBUG === "true";
+  const platform = platformEnv === "android" || platformEnv === "ios" ? platformEnv : undefined;
+  const debug = process.env.RN_BUN_DEBUG === "1" || process.env.RN_BUN_DEBUG === "true";
   const strategyEnv = process.env.RN_BUN_STRATEGY;
   const strategy =
-    strategyEnv === "direct" || strategyEnv === "namespace" || strategyEnv === "auto"
-      ? strategyEnv
-      : undefined;
+    strategyEnv === "direct" || strategyEnv === "namespace" || strategyEnv === "auto" ? strategyEnv : undefined;
 
   let fileOpts: PluginOptions = {};
   try {
@@ -151,15 +150,13 @@ export function loadConfig(): ResolvedConfig {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const resolved = Bun.resolveSync("./rn-bun.config.ts", process.cwd());
     // Dynamic import is async; for preload we use require via Bun.
-    // @ts-expect-error — Bun allows requiring .ts
     const mod = require(resolved);
     fileOpts = (mod?.default ?? mod ?? {}) as PluginOptions;
   } catch {
     // no config file — fine
   }
 
-  const libraryMocks =
-    parseLibraryMocksEnv(process.env.RN_BUN_LIBRARY_MOCKS) ?? fileOpts.libraryMocks;
+  const libraryMocks = parseLibraryMocksEnv(process.env.RN_BUN_LIBRARY_MOCKS) ?? fileOpts.libraryMocks;
 
   return resolveConfig({
     ...fileOpts,

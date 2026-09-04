@@ -12,17 +12,10 @@ export const linearGradientShim: LibraryShim = {
     const React = loadConsumerReact();
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const RN = require("react-native") as typeof import("react-native");
-    const LinearGradient = ({
-      children,
-      ...rest
-    }: Record<string, unknown> & { children?: React.ReactNode }) =>
+    const LinearGradient = ({ children, ...rest }: Record<string, unknown> & { children?: React.ReactNode }) =>
       React.createElement(RN.View, rest, children);
     LinearGradient.displayName = "LinearGradient";
-    mockBoth(
-      "react-native-linear-gradient",
-      () => ({ default: LinearGradient, __esModule: true }),
-      cwd,
-    );
+    mockBoth("react-native-linear-gradient", () => ({ default: LinearGradient, __esModule: true }), cwd);
   },
 };
 
@@ -49,11 +42,7 @@ export const webviewShim: LibraryShim = {
         return React.createElement(RN.View, this.props);
       }
     }
-    mockBoth(
-      "react-native-webview",
-      () => ({ default: WebView, WebView, __esModule: true }),
-      cwd,
-    );
+    mockBoth("react-native-webview", () => ({ default: WebView, WebView, __esModule: true }), cwd);
   },
 };
 

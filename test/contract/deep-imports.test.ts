@@ -119,9 +119,7 @@ describe("contract: deep react-native imports", () => {
     ];
     for (const k of known) all.add(k);
 
-    const uncovered = [...all].filter(
-      (s) => !DEEP_PATHS[s] && !DEEP_PATH_ALLOWLIST.has(s),
-    );
+    const uncovered = [...all].filter((s) => !DEEP_PATHS[s] && !DEEP_PATH_ALLOWLIST.has(s));
 
     expect({ scanned, uncovered }).toEqual({ scanned, uncovered: [] });
   });

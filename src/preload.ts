@@ -60,8 +60,8 @@ if (typeof g.document === "undefined") {
     querySelectorAll: () => [],
   };
 }
-if (typeof (g as { location?: unknown }).location === "undefined") {
-  (g as { location: { href: string; pathname: string; search: string; hash: string } }).location = {
+if (typeof g.location === "undefined") {
+  g.location = {
     href: "http://localhost/",
     pathname: "/",
     search: "",
@@ -69,21 +69,20 @@ if (typeof (g as { location?: unknown }).location === "undefined") {
   };
 }
 if (typeof win.location === "undefined") {
-  win.location = (g as { location: unknown }).location;
+  win.location = g.location;
 }
 
 if (typeof g.requestAnimationFrame !== "function") {
-  g.requestAnimationFrame = (cb: (time: number) => void): ReturnType<typeof setTimeout> =>
-    setTimeout(() => cb(Date.now()), 0);
+  g.requestAnimationFrame = (cb: (time: number) => void) => setTimeout(() => cb(Date.now()), 0);
 }
 if (typeof g.cancelAnimationFrame !== "function") {
-  g.cancelAnimationFrame = (id: ReturnType<typeof setTimeout>): void => {
-    clearTimeout(id);
+  g.cancelAnimationFrame = (id: number | null | undefined) => {
+    if (id != null) clearTimeout(id);
   };
 }
 
 if (typeof g.performance === "undefined") {
-  g.performance = { now: () => Date.now() };
+  g.performance = { now: () => Date.now() } as unknown as Performance;
 } else if (typeof (g.performance as { now?: unknown }).now !== "function") {
   (g.performance as { now: () => number }).now = () => Date.now();
 }

@@ -19,10 +19,7 @@ export function registerRntlMatchers(debug = false): void {
     expect.extend(matchers as Parameters<typeof expect.extend>[0]);
   } catch (err) {
     if (debug) {
-      console.warn(
-        "[rn-bun] Could not auto-register RNTL matchers:",
-        err instanceof Error ? err.message : err,
-      );
+      console.warn("[rn-bun] Could not auto-register RNTL matchers:", err instanceof Error ? err.message : err);
     }
   }
 }

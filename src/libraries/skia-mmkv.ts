@@ -69,15 +69,13 @@ export const skiaShim: LibraryShim = {
     const factory = () => {
       try {
         // Prefer official Mock(CanvasKit) when canvaskit-wasm is available.
-        const mockMod = tryRequire("@shopify/react-native-skia/lib/commonjs/mock", cwd) as
-          | { Mock?: (ck: unknown) => unknown }
-          | null;
+        const mockMod = tryRequire("@shopify/react-native-skia/lib/commonjs/mock", cwd) as {
+          Mock?: (ck: unknown) => unknown;
+        } | null;
         if (mockMod?.Mock) {
           try {
             // eslint-disable-next-line @typescript-eslint/no-require-imports
-            const CanvasKitInit = require(
-              Bun.resolveSync("canvaskit-wasm/bin/full/canvaskit.js", cwd),
-            );
+            const CanvasKitInit = require(Bun.resolveSync("canvaskit-wasm/bin/full/canvaskit.js", cwd));
             // Sync path unavailable — CanvasKitInit is async. Fall through to host.
             // Attempt sync-like: some builds expose .default as factory returning Promise.
             void CanvasKitInit;
@@ -105,14 +103,29 @@ export const mmkvShim: LibraryShim = {
   register({ cwd, config }) {
     const React = loadConsumerReact();
 
-    const createMockMMKV =
-      (tryRequire("react-native-mmkv/lib/createMMKV/createMockMMKV", cwd) as
-        | { createMockMMKV?: () => Record<string, unknown>; default?: () => Record<string, unknown> }
-        | null);
+    const createMockMMKV = tryRequire("react-native-mmkv/lib/createMMKV/createMockMMKV", cwd) as {
+      createMockMMKV?: () => Record<string, unknown>;
+      default?: () => Record<string, unknown>;
+    } | null;
 
-    function makeStore() {
-      if (createMockMMKV?.createMockMMKV) return createMockMMKV.createMockMMKV();
-      if (typeof createMockMMKV?.default === "function") return createMockMMKV.default();
+    type MmkvStore = {
+      getString: (k: string) => string | undefined;
+      getNumber: (k: string) => number | undefined;
+      getBoolean: (k: string) => boolean | undefined;
+      getBuffer: (k: string) => ArrayBuffer | undefined;
+      set: (k: string, v: string | number | boolean | ArrayBuffer) => void;
+      remove: (k: string) => boolean;
+      contains: (k: string) => boolean;
+      getAllKeys: () => string[];
+      clearAll: () => void;
+      recrypt: () => void;
+      readonly size: number;
+      addOnValueChangedListener: () => { remove: () => void };
+    };
+
+    function makeStore(): MmkvStore {
+      if (createMockMMKV?.createMockMMKV) return createMockMMKV.createMockMMKV() as MmkvStore;
+      if (typeof createMockMMKV?.default === "function") return createMockMMKV.default() as MmkvStore;
 
       if (config.debug) {
         console.warn("[rn-bun] mmkv createMockMMKV missing; using Map store");
@@ -150,13 +163,13 @@ export const mmkvShim: LibraryShim = {
       };
     }
 
-    const instances = new Map<string, ReturnType<typeof makeStore>>();
+    const instances = new Map<string, MmkvStore>();
     function createMMKV(id = "mmkv.default") {
       if (!instances.has(id)) instances.set(id, makeStore());
       return instances.get(id)!;
     }
 
-    function useMMKVString(key: string, instance?: ReturnType<typeof makeStore>) {
+    function useMMKVString(key: string, instance?: MmkvStore) {
       const mmkv = instance ?? createMMKV();
       const [value, setValue] = React.useState(() => mmkv.getString(key));
       const set = React.useCallback(
@@ -170,7 +183,7 @@ export const mmkvShim: LibraryShim = {
       return [value, set] as const;
     }
 
-    function useMMKVNumber(key: string, instance?: ReturnType<typeof makeStore>) {
+    function useMMKVNumber(key: string, instance?: MmkvStore) {
       const mmkv = instance ?? createMMKV();
       const [value, setValue] = React.useState(() => mmkv.getNumber(key));
       const set = React.useCallback(
@@ -184,7 +197,7 @@ export const mmkvShim: LibraryShim = {
       return [value, set] as const;
     }
 
-    function useMMKVBoolean(key: string, instance?: ReturnType<typeof makeStore>) {
+    function useMMKVBoolean(key: string, instance?: MmkvStore) {
       const mmkv = instance ?? createMMKV();
       const [value, setValue] = React.useState(() => mmkv.getBoolean(key));
       const set = React.useCallback(
@@ -198,7 +211,7 @@ export const mmkvShim: LibraryShim = {
       return [value, set] as const;
     }
 
-    function useMMKVObject<T>(key: string, instance?: ReturnType<typeof makeStore>) {
+    function useMMKVObject<T>(key: string, instance?: MmkvStore) {
       const [raw, setRaw] = useMMKVString(key, instance);
       const value = raw ? (JSON.parse(raw) as T) : undefined;
       const set = (v: T | undefined) => setRaw(v === undefined ? undefined : JSON.stringify(v));

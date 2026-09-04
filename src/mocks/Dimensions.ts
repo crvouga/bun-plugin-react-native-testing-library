@@ -42,10 +42,7 @@ export function createDimensions(window: WindowMetrics) {
   return Dimensions;
 }
 
-export function createUseWindowDimensions(
-  React: typeof import("react"),
-  window: WindowMetrics,
-) {
+export function createUseWindowDimensions(React: typeof import("react"), window: WindowMetrics) {
   return function useWindowDimensions(): WindowMetrics {
     const [dims] = React.useState(window);
     return dims;
