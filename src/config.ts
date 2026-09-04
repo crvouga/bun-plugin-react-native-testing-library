@@ -8,6 +8,14 @@ export type Platform = "ios" | "android";
 
 export type LoadStrategy = "auto" | "direct" | "namespace";
 
+/**
+ * Which third-party library shims to auto-register.
+ * - `"auto"` (default): register when the package resolves from cwd
+ * - `string[]`: only these registry names
+ * - `false`: disable all library shims
+ */
+export type LibraryMocksOption = "auto" | readonly string[] | false;
+
 export type WindowMetrics = {
   width: number;
   height: number;
@@ -37,6 +45,8 @@ export type PluginOptions = {
    * - `"namespace"`: rewrite into `rn-flow:` then `onLoad` that namespace
    */
   strategy?: LoadStrategy;
+  /** Third-party library mock registration. Default: `"auto"`. */
+  libraryMocks?: LibraryMocksOption;
 };
 
 export type ResolvedConfig = {
@@ -48,6 +58,7 @@ export type ResolvedConfig = {
   debug: boolean;
   window: WindowMetrics;
   strategy: LoadStrategy;
+  libraryMocks: LibraryMocksOption;
 };
 
 export const DEFAULT_ASSET_EXTS = [
@@ -105,7 +116,17 @@ export function resolveConfig(options: PluginOptions = {}): ResolvedConfig {
     debug: options.debug ?? false,
     window: { ...DEFAULT_WINDOW, ...options.window },
     strategy: options.strategy ?? "auto",
+    libraryMocks: options.libraryMocks ?? "auto",
   };
+}
+
+/** Parse `RN_BUN_LIBRARY_MOCKS` env: `auto` | `false` | `off` | comma-separated names. */
+export function parseLibraryMocksEnv(raw: string | undefined): LibraryMocksOption | undefined {
+  if (raw == null || raw === "") return undefined;
+  const v = raw.trim().toLowerCase();
+  if (v === "auto") return "auto";
+  if (v === "false" || v === "off" || v === "0" || v === "none") return false;
+  return raw.split(",").map((s) => s.trim()).filter(Boolean);
 }
 
 /**
@@ -137,11 +158,15 @@ export function loadConfig(): ResolvedConfig {
     // no config file — fine
   }
 
+  const libraryMocks =
+    parseLibraryMocksEnv(process.env.RN_BUN_LIBRARY_MOCKS) ?? fileOpts.libraryMocks;
+
   return resolveConfig({
     ...fileOpts,
     platform: platform ?? fileOpts.platform,
     debug: debug || fileOpts.debug,
     strategy: strategy ?? fileOpts.strategy,
     cacheDir: process.env.RN_BUN_CACHE_DIR ?? fileOpts.cacheDir,
+    libraryMocks,
   });
 }

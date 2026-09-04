@@ -1,5 +1,4 @@
 import { describe, expect, test } from "bun:test";
-import * as React from "react";
 import { render } from "@testing-library/react-native";
 import { ThemedBox } from "./ThemedBox.tsx";
 

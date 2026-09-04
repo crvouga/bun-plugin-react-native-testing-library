@@ -23,7 +23,7 @@ Write RNTL tests as usual. **RNTL v14 is async** — prefer the render return va
 
 ```tsx
 import { test, expect } from "bun:test";
-import * as React from "react";
+
 import { Text, View } from "react-native";
 import { render, fireEvent } from "@testing-library/react-native";
 
@@ -70,13 +70,46 @@ Configure via `createReactNativePlugin(options)`, env vars, or optional `./rn-bu
 | `debug` | `RN_BUN_DEBUG=1` | `false` | Log cache hits/misses and transform times |
 | `window` | — | `{390,844,3,1}` | `Dimensions` / `useWindowDimensions` metrics |
 | `strategy` | `RN_BUN_STRATEGY` | `"auto"` → `"namespace"` | How to intercept RN sources (see pitfall below) |
+| `libraryMocks` | `RN_BUN_LIBRARY_MOCKS` | `"auto"` | Auto-register third-party library shims when packages resolve (`false` / comma-separated names to filter) |
+
+## Third-party library compatibility
+
+When a package is installed in the consumer, preload auto-registers a shim (`libraryMocks: "auto"`). Proven in [`test/real-world/`](test/real-world/) against the versions below:
+
+| Library | Strategy | Version tested | Notes |
+| --- | --- | --- | --- |
+| `react-native-reanimated` | mutable JS fallback | 4.6.0 | Official mock is non-extensible; GH assigns `setGestureState` |
+| `react-native-worklets` | JS fallback | 0.12.1 | `runOnJS` / `runOnUI` passthrough |
+| `react-native-gesture-handler` | official `lib/module/mocks/*` via `mock.module` | 3.2.1 | Translates `jestSetup.js` |
+| `react-native-safe-area-context` | official jest mock | 5.9.1 | |
+| `react-native-screens` | View passthrough shim | 4.27.0 | `screensEnabled() => false` |
+| `@react-navigation/*` | no shim (uses screens + safe-area) | 7.x | Needs `window.history` / `document` stubs (preload) |
+| `@react-native-async-storage/async-storage` | official `./jest` | 3.1.1 | In-memory |
+| `react-native-svg` | real JS + `Touchable.Mixin` on RN mock | 15.15.5 | |
+| `@shopify/react-native-skia` | host-component fallback | 2.11.2 | CanvasKit WASM init is async; sync preload uses View hosts |
+| `react-native-mmkv` | in-memory + hooks | 4.3.2 | Nitro path mocked |
+| `react-native-webview` | View host shim | 14.0.1 | Platform entry unsupported under Bun |
+| `react-native-linear-gradient` | View shim | 2.8.3 | `import { type }` in `.ios.js` rejected by Bun |
+| `react-native-device-info` | constants fallback | 15.0.2 | Official mock needs `jest.fn` |
+| `react-native-paper` | no shim | 5.15.3 | |
+| `zustand` / `@tanstack/react-query` / RTK / `react-hook-form` | no shim | current | Pure JS |
+
+```bash
+bun run test              # unit + property + contract + example-app (--bail, ~3s)
+bun run test:integration  # spawn suites (cached example sandbox + real-world)
+bun run test:all          # test + integration
+bun run test:real-world   # consumer sandbox directly
+bun run test:soak         # RN_BUN_FC_RUNS=100 property soak
+RN_BUN_SKIP_REAL_WORLD=1 bun run test:integration  # skip spawned real-world
+```
 
 ## Architecture
 
 ```
 bunfig preload
-  → globals (__DEV__, IS_REACT_ACT_ENVIRONMENT, rAF, jest shims)
-  → mock.module("react-native")  // public API (host components + Platform/…)
+  → globals (__DEV__, IS_REACT_ACT_ENVIRONMENT, rAF, document/history, jest async timer shims)
+  → mock.module("react-native") + DEEP_PATHS (Libraries/*)
+  → registerLibraryMocks (auto-detect)
   → plugin(createReactNativePlugin)
        → onResolve: Metro platform extensions + optional rn-flow: rewrite
        → onLoad: Flow/Hermes transform (cached) + asset stubs
@@ -102,10 +135,11 @@ Smoke probe result on Bun **1.4.0** (see `test/integration/smoke-onload-result.j
 | Surface | Behaviour |
 | --- | --- |
 | Animated native driver | Forced off (`shouldUseNativeDriver` → `false`); JS driver only |
-| Real `VirtualizedList` virtualization | `FlatList` mock renders all rows (map-style); fine for unit tests |
-| Native layout measurement | `UIManager.measure*` are no-ops |
-| Named `import { screen }` live binding | Broken under Bun CJS→ESM; use `const screen = await render(...)` or `getScreen()` |
-| Full RN public API | Common testing surface is mocked; exotic modules may still need custom `mock.module` |
+| Real `VirtualizedList` virtualization | Lists render all rows (map-style); fine for unit tests |
+| Skia CanvasKit WASM | Sync preload uses host-component fallback |
+| Named `import { screen }` live binding | Broken under Bun CJS→ESM; use `await render(...)` return or `getScreen()` |
+| `jest.mock()` | Unsupported — use `mock.module` or `libraryMocks` |
+| `userEvent` + fake timers | Prefer `fireEvent` in property loops; restore `jest.useRealTimers()` after userEvent |
 
 ## Troubleshooting
 
@@ -114,8 +148,9 @@ Smoke probe result on Bun **1.4.0** (see `test/integration/smoke-onload-result.j
 | `Unexpected typeof` / Flow parse errors from `react-native/index.js` | Preload not active, or plugin registered before mocks. Ensure `bunfig.toml` preload path resolves and you are on Bun ≥ 1.4.0 |
 | Empty `Module {}` / undefined exports from RN | Do **not** rely on direct `onLoad` of `node_modules`. Keep `strategy` at `namespace`/`auto` and the public-API mock |
 | `Invalid hook call` | Dual React copies — usually a `file:` link without cwd React resolution (fixed in this package); ensure the consumer has a single `react` |
-| `` `render` function has not been called `` on `screen` | Use the return value of `await render(...)` |
+| `` `render` function has not been called `` on `screen` | Use the return value of `await render(...)` or `getScreen()` |
 | Matchers missing | Import from `@testing-library/react-native` (not `/pure`), or `expect.extend(require("…/matchers"))` |
+| `window.history.state` / `document is not defined` | Ensure preload is active (stubs provided) |
 
 ## CI matrix note
 
@@ -127,9 +162,10 @@ Pin Bun in CI (this repo was verified on **1.4.0**). Re-run `test/integration/sm
 bun install
 bun test
 bun test --coverage
+bun run test:real-world
 ```
 
-Property tests use `fast-check` with `numRuns >= 100` and seed `0x5a17e0e1` (override with `RN_BUN_FC_SEED`).
+Property tests use `fast-check` with `numRuns >= 40–100` and log seeds on failure (`RN_BUN_FC_SEED` for example-app properties).
 
 ## License
 

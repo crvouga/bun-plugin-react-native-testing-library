@@ -1,4 +1,4 @@
-import * as React from "react";
+import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 
 export type CounterProps = {
@@ -6,7 +6,7 @@ export type CounterProps = {
 };
 
 export function Counter({ initial = 0 }: CounterProps) {
-  const [count, setCount] = React.useState(initial);
+  const [count, setCount] = useState(initial);
 
   return (
     <View testID="counter-root" accessibilityLabel="counter">

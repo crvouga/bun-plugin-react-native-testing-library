@@ -1,23 +1,33 @@
 /**
  * Integration: spawn `bun test` against the example app with/without preload.
+ *
+ * Uses a persistent install cache under `.virt-rn-fixture/example-sandbox` so
+ * each run does not pay for a fresh `bun install` (~3–15s).
  */
 
 import { describe, expect, test } from "bun:test";
-import * as React from "react";
+import { createElement } from "react";
 import { Pressable, Text, View } from "react-native";
 import { render } from "@testing-library/react-native";
-import { mkdtempSync, rmSync, writeFileSync, cpSync } from "node:fs";
-import { tmpdir } from "node:os";
+import {
+  existsSync,
+  mkdirSync,
+  rmSync,
+  writeFileSync,
+  cpSync,
+  readFileSync,
+} from "node:fs";
 import path from "node:path";
 
 const ROOT = path.resolve(import.meta.dir, "../..");
+const CACHE = path.join(ROOT, ".virt-rn-fixture", "example-sandbox");
 
 async function runBunTest(
   cwd: string,
-  args: string[] = ["."],
+  args: string[] = ["example-app"],
 ): Promise<{ exitCode: number; stdout: string; stderr: string }> {
   const proc = Bun.spawn({
-    cmd: [process.execPath, "test", ...args],
+    cmd: [process.execPath, "test", "--bail", ...args],
     cwd,
     stdout: "pipe",
     stderr: "pipe",
@@ -34,96 +44,96 @@ async function runBunTest(
   return { exitCode, stdout, stderr };
 }
 
-function prepareExampleSandbox(opts: { withPreload: boolean }): string {
-  const dir = mkdtempSync(path.join(tmpdir(), "rn-bun-ex-"));
-  cpSync(path.join(ROOT, "test", "example-app"), path.join(dir, "example-app"), {
-    recursive: true,
-  });
-  writeFileSync(
-    path.join(dir, "package.json"),
-    JSON.stringify(
-      {
-        name: "example-sandbox",
-        type: "module",
-        private: true,
-        dependencies: {
-          "bun-plugin-react-native-testing-library": `file:${ROOT}`,
-          react: "19.2.8",
-          "react-native": "0.87.1",
-          "@testing-library/react-native": "14.0.1",
-          "test-renderer": "1.2.0",
-        },
+function packageJson(): string {
+  return JSON.stringify(
+    {
+      name: "example-sandbox",
+      type: "module",
+      private: true,
+      dependencies: {
+        "bun-plugin-react-native-testing-library": `file:${ROOT}`,
+        react: "19.2.8",
+        "react-native": "0.87.1",
+        "@testing-library/react-native": "14.0.1",
+        "test-renderer": "1.2.0",
       },
-      null,
-      2,
-    ),
+    },
+    null,
+    2,
   );
+}
 
-  if (opts.withPreload) {
-    writeFileSync(
-      path.join(dir, "bunfig.toml"),
-      `[test]\npreload = ["bun-plugin-react-native-testing-library/preload"]\n`,
-    );
-  } else {
-    writeFileSync(path.join(dir, "bunfig.toml"), `[test]\n`);
+async function ensureCachedInstall(): Promise<void> {
+  mkdirSync(CACHE, { recursive: true });
+  const pkgPath = path.join(CACHE, "package.json");
+  const next = packageJson();
+  const prev = existsSync(pkgPath) ? readFileSync(pkgPath, "utf8") : "";
+  writeFileSync(pkgPath, next);
+
+  const needsInstall =
+    !existsSync(path.join(CACHE, "node_modules")) || prev !== next;
+  if (!needsInstall) return;
+
+  const install = Bun.spawn({
+    cmd: [process.execPath, "install"],
+    cwd: CACHE,
+    stdout: "pipe",
+    stderr: "pipe",
+  });
+  const code = await install.exited;
+  if (code !== 0) {
+    const err = await new Response(install.stderr).text();
+    throw new Error(`example-sandbox install failed: ${err}`);
   }
+}
 
-  return dir;
+function syncExampleApp(): void {
+  const dest = path.join(CACHE, "example-app");
+  rmSync(dest, { recursive: true, force: true });
+  cpSync(path.join(ROOT, "test", "example-app"), dest, { recursive: true });
+}
+
+function writeBunfig(withPreload: boolean): void {
+  writeFileSync(
+    path.join(CACHE, "bunfig.toml"),
+    withPreload
+      ? `[test]\npreload = ["bun-plugin-react-native-testing-library/preload"]\n`
+      : `[test]\n`,
+  );
 }
 
 describe("integration: example-app under bun test", () => {
   test("with preload: suite passes", async () => {
-    const dir = prepareExampleSandbox({ withPreload: true });
-    try {
-      const install = Bun.spawn({
-        cmd: [process.execPath, "install"],
-        cwd: dir,
-        stdout: "pipe",
-        stderr: "pipe",
-      });
-      const installCode = await install.exited;
-      expect(installCode).toBe(0);
+    await ensureCachedInstall();
+    syncExampleApp();
+    writeBunfig(true);
 
-      const { exitCode, stdout, stderr } = await runBunTest(dir, ["example-app"]);
-      const out = stdout + stderr;
-      console.log("POSITIVE_OUT_TAIL\n", out.slice(-800));
-      expect(exitCode).toBe(0);
-      expect(out).toMatch(/\d+ pass/);
-      expect(out).toMatch(/0 fail/);
-    } finally {
-      rmSync(dir, { recursive: true, force: true });
-    }
-  }, 180_000);
+    const { exitCode, stdout, stderr } = await runBunTest(CACHE);
+    const out = stdout + stderr;
+    if (exitCode !== 0) console.error(out.slice(-1200));
+    expect(exitCode).toBe(0);
+    expect(out).toMatch(/\d+ pass/);
+    expect(out).toMatch(/0 fail/);
+  }, 60_000);
 
   test("without preload: suite fails (negative control)", async () => {
-    const dir = prepareExampleSandbox({ withPreload: false });
-    try {
-      const install = Bun.spawn({
-        cmd: [process.execPath, "install"],
-        cwd: dir,
-        stdout: "pipe",
-        stderr: "pipe",
-      });
-      await install.exited;
+    await ensureCachedInstall();
+    syncExampleApp();
+    writeBunfig(false);
 
-      const { exitCode, stdout, stderr } = await runBunTest(dir, ["example-app"]);
-      const out = stdout + stderr;
-      console.log("NEGATIVE_OUT_TAIL\n", out.slice(-800));
-      expect(exitCode).not.toBe(0);
-    } finally {
-      rmSync(dir, { recursive: true, force: true });
-    }
-  }, 180_000);
+    const { exitCode } = await runBunTest(CACHE);
+    expect(exitCode).not.toBe(0);
+  }, 60_000);
 });
 
 describe("integration: RNTL matcher smoke", () => {
   test("toBeOnTheScreen, toHaveTextContent, toBeVisible, getByRole", async () => {
     const screen = await render(
-      React.createElement(
+      createElement(
         View,
         { testID: "wrap" },
-        React.createElement(Text, { testID: "label" }, "hello"),
-        React.createElement(
+        createElement(Text, { testID: "label" }, "hello"),
+        createElement(
           Pressable,
           {
             testID: "btn",
@@ -131,7 +141,7 @@ describe("integration: RNTL matcher smoke", () => {
             accessibilityLabel: "go",
             accessible: true,
           },
-          React.createElement(Text, null, "Go"),
+          createElement(Text, null, "Go"),
         ),
       ),
     );
@@ -140,8 +150,6 @@ describe("integration: RNTL matcher smoke", () => {
     expect(screen.getByTestId("label")).toBeVisible();
     expect(screen.getByTestId("label")).toHaveTextContent("hello");
     expect(screen.getByLabelText("go")).toBeOnTheScreen();
-    // Prefer role query when RNTL recognizes it; fall back to testID so the
-    // matcher smoke still covers toBeOnTheScreen on an interactive host.
     const button = screen.queryByRole("button") ?? screen.getByTestId("btn");
     expect(button).toBeOnTheScreen();
     expect(button).toBeVisible();

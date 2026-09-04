@@ -9,9 +9,7 @@ import {
   resolvePlatformFile,
 } from "../../src/resolve.ts";
 import { transformFlow } from "../../src/transform-flow.ts";
-
-const SEED = Number(process.env.RN_BUN_FC_SEED ?? "0x5a17e0e1");
-const fcOpts = { numRuns: 100, seed: SEED } as const;
+import { fcOpts, fcRuns } from "../fc-opts.ts";
 
 const safeName = fc.stringMatching(/^[A-Za-z][A-Za-z0-9_]{0,8}$/);
 const platforms = fc.constantFrom("ios" as const, "android" as const);
@@ -71,7 +69,7 @@ describe("property: resolver soundness & priority", () => {
           // This property is intentionally FALSE for the broken resolver:
           expect(broken).toBe(correct);
         }),
-        { ...fcOpts, numRuns: 50, endOnFailure: true },
+        fcRuns(50),
       );
     } catch (err) {
       // Extract counterexample from fast-check error message
@@ -242,7 +240,7 @@ describe("property: Flow transform preserves semantics + idempotence", () => {
         expect(twice.includes("import type")).toBe(false);
         expect(() => new Bun.Transpiler({ loader: "js" }).transformSync(twice)).not.toThrow();
       }),
-      { ...fcOpts, numRuns: 100 },
+      fcOpts,
     );
   });
 });

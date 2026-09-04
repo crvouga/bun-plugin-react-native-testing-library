@@ -1,5 +1,4 @@
 import { describe, expect, test } from "bun:test";
-import * as React from "react";
 import { fireEvent, render } from "@testing-library/react-native";
 import { Counter } from "./Counter.tsx";
 

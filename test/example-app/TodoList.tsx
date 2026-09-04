@@ -1,4 +1,4 @@
-import * as React from "react";
+import { useState } from "react";
 import { FlatList, Pressable, Text, TextInput, View } from "react-native";
 
 export type TodoListProps = {
@@ -6,8 +6,8 @@ export type TodoListProps = {
 };
 
 export function TodoList({ initial = [] }: TodoListProps) {
-  const [items, setItems] = React.useState<string[]>(initial);
-  const [draft, setDraft] = React.useState("");
+  const [items, setItems] = useState<string[]>(initial);
+  const [draft, setDraft] = useState("");
 
   const add = () => {
     const t = draft.trim();

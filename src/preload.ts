@@ -8,10 +8,12 @@
  */
 
 import { plugin } from "bun";
-import { expect } from "bun:test";
 import { createReactNativePlugin } from "./index.ts";
 import { loadConfig } from "./config.ts";
+import { installJestShims } from "./jest-shims.ts";
+import { registerLibraryMocks } from "./libraries/index.ts";
 import { registerMocks } from "./mocks/index.ts";
+import { registerRntlMatchers, registerRntlScreenFix } from "./rntl.ts";
 
 const g = globalThis as typeof globalThis & Record<string, unknown>;
 
@@ -23,6 +25,51 @@ g.nativeFabricUIManager = g.nativeFabricUIManager ?? {};
 
 if (typeof g.window === "undefined") {
   g.window = globalThis;
+}
+
+const win = g.window as Record<string, unknown>;
+if (typeof win.history === "undefined") {
+  win.history = {
+    state: null,
+    pushState: () => {},
+    replaceState: () => {},
+    go: () => {},
+    back: () => {},
+    forward: () => {},
+    length: 1,
+  };
+}
+if (typeof win.addEventListener !== "function") {
+  win.addEventListener = () => {};
+  win.removeEventListener = () => {};
+}
+if (typeof win.dispatchEvent !== "function") {
+  win.dispatchEvent = () => true;
+}
+
+// Minimal DOM stubs some libraries (react-navigation linking) probe in tests.
+if (typeof g.document === "undefined") {
+  g.document = {
+    createElement: () => ({ style: {}, setAttribute: () => {}, appendChild: () => {} }),
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    body: { appendChild: () => {}, removeChild: () => {} },
+    documentElement: { style: {} },
+    getElementById: () => null,
+    querySelector: () => null,
+    querySelectorAll: () => [],
+  };
+}
+if (typeof (g as { location?: unknown }).location === "undefined") {
+  (g as { location: { href: string; pathname: string; search: string; hash: string } }).location = {
+    href: "http://localhost/",
+    pathname: "/",
+    search: "",
+    hash: "",
+  };
+}
+if (typeof win.location === "undefined") {
+  win.location = (g as { location: unknown }).location;
 }
 
 if (typeof g.requestAnimationFrame !== "function") {
@@ -41,19 +88,7 @@ if (typeof g.performance === "undefined") {
   (g.performance as { now: () => number }).now = () => Date.now();
 }
 
-// --- Minimal jest shim for RNTL timer probes (bun:test already exposes `jest`) ---
-// RNTL's helpers/timers.js checks `typeof jest !== 'undefined'` and
-// `setTimeout._isMockFunction` / `jest.getRealSystemTime`. bun:test's jest
-// covers useFakeTimers / useRealTimers / advanceTimersByTime*; fill gaps.
-type JestLike = Record<string, unknown>;
-const existingJest = (g.jest ?? {}) as JestLike;
-if (typeof existingJest.getRealSystemTime !== "function") {
-  existingJest.getRealSystemTime = () => Date.now();
-}
-if (typeof existingJest.now !== "function") {
-  existingJest.now = () => Date.now();
-}
-g.jest = existingJest;
+installJestShims();
 
 // --- Config + mocks + plugin ---
 // IMPORTANT: register mock.module() BEFORE plugin(). On Bun 1.4.0, installing
@@ -64,6 +99,8 @@ const config = loadConfig();
 const strategy = config.strategy === "auto" ? "namespace" : config.strategy;
 
 registerMocks(config);
+registerLibraryMocks(config);
+registerRntlScreenFix();
 
 plugin(
   createReactNativePlugin({
@@ -72,24 +109,6 @@ plugin(
   }),
 );
 
-// --- Matcher fallback ---
-// RNTL's main entry calls `expect.extend(...)` via `./matchers/extend-expect`.
-// Registering matchers here is best-effort: requiring the RNTL package at
-// preload time can re-enter beforeAll in some Bun layouts, so we swallow errors.
-try {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const matchers = require("@testing-library/react-native/matchers") as Record<
-    string,
-    unknown
-  >;
-  expect.extend(matchers as Parameters<typeof expect.extend>[0]);
-} catch (err) {
-  if (config.debug) {
-    console.warn(
-      "[rn-bun] Could not auto-register RNTL matchers (they still register when you import RNTL):",
-      err instanceof Error ? err.message : err,
-    );
-  }
-}
+registerRntlMatchers(config.debug);
 
 export { config, strategy };

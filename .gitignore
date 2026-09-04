@@ -8,3 +8,4 @@ coverage/
 .virt-rn-fixture/
 dist/
 *.tsbuildinfo
+test/real-world/node_modules/

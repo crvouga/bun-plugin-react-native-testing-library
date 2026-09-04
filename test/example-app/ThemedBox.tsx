@@ -1,4 +1,4 @@
-import * as React from "react";
+
 import { Platform, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 
 export function ThemedBox() {

@@ -13,17 +13,47 @@
 
 import type { ResolvedConfig } from "../config.ts";
 import { createDimensions, createUseWindowDimensions } from "./Dimensions.ts";
-import { createHostComponent, noop } from "./host.ts";
+import { createNativeModules } from "./NativeModules.ts";
 import { createPlatform } from "./Platform.ts";
+import {
+  createAnimated,
+  createUseAnimatedColor,
+  createUseAnimatedValue,
+  createUseAnimatedValueXY,
+} from "./animated.ts";
+import {
+  createAssetRegistry,
+  createAppRegistry,
+  createCodegenHelpers,
+  createLogBox,
+  createMiscApis,
+  createPanResponder,
+  createPermissionsAndroid,
+  createStyleSheet,
+} from "./apis.ts";
+import { createComponents } from "./components.ts";
+import {
+  EventEmitter,
+  NativeEventEmitter,
+  createAppStateWithEmitter,
+  createBackHandler,
+  createDeviceEventEmitter,
+  createKeyboard,
+  createLinkingWithEmitter,
+} from "./events.ts";
+import { createHostComponent, noop } from "./host.ts";
+import { DEFAULT_INITIAL_NUM_TO_RENDER, createLists } from "./lists.ts";
 import {
   createAccessibilityInfo,
   createAppearance,
-  createAppState,
   createClipboard,
   createInteractionManager,
-  createLinking,
+  createNativeComponentRegistry,
   createPixelRatio,
+  createRequireNativeComponent,
   createSettings,
+  createUIManager,
+  createTurboModuleRegistry,
   createVibration,
 } from "./surfaces.ts";
 
@@ -38,174 +68,21 @@ function loadConsumerReact(): typeof import("react") {
   }
 }
 
-function StyleSheetImpl() {
-  return {
-    create: <T extends Record<string, unknown>>(styles: T): T => styles,
-    flatten: (style: unknown): Record<string, unknown> => {
-      if (style == null) return {};
-      if (Array.isArray(style)) {
-        return Object.assign({}, ...style.filter(Boolean).map(StyleSheetImpl().flatten));
-      }
-      if (typeof style === "object") return style as Record<string, unknown>;
-      return {};
-    },
-    compose: (a: unknown, b: unknown) => [a, b],
-    hairlineWidth: 1,
-    absoluteFillObject: {
-      position: "absolute" as const,
-      left: 0,
-      right: 0,
-      top: 0,
-      bottom: 0,
-    },
-    absoluteFill: {
-      position: "absolute" as const,
-      left: 0,
-      right: 0,
-      top: 0,
-      bottom: 0,
-    },
-  };
-}
-
 /**
  * Build the module shape returned by `mock.module("react-native", …)`.
+ * Covers every getter exported by react-native/index.js (96 names).
  */
 export function createReactNativePublicAPI(config: ResolvedConfig) {
   const React = loadConsumerReact();
-
-  const View = createHostComponent(React, "View");
-  const Text = createHostComponent(React, "Text");
-  const TextInput = createHostComponent(React, "TextInput", {
-    instanceMethods: { isFocused: () => false, clear: noop, focus: noop, blur: noop },
+  const components = createComponents(React);
+  const lists = createLists(React, components.View);
+  const Animated = createAnimated(React, {
+    View: components.View,
+    Text: components.Text,
+    Image: components.Image,
+    ScrollView: components.ScrollView,
+    FlatList: lists.FlatList,
   });
-  const Image = createHostComponent(React, "Image", {
-    statics: {
-      getSize: (_u: string, ok: (w: number, h: number) => void) => ok(320, 240),
-      prefetch: () => Promise.resolve(true),
-      resolveAssetSource: (s: unknown) => s,
-    },
-  });
-
-  const ScrollView = class ScrollView extends React.Component<
-    Record<string, unknown> & { children?: React.ReactNode; refreshControl?: React.ReactNode }
-  > {
-    static displayName = "ScrollView";
-    scrollTo = noop;
-    scrollToEnd = noop;
-    render() {
-      const { children, refreshControl, ...rest } = this.props;
-      return React.createElement(
-        "RCTScrollView",
-        rest,
-        refreshControl,
-        React.createElement(View, null, children),
-      );
-    }
-  };
-
-  const Pressable = class Pressable extends React.Component<
-    Record<string, unknown> & {
-      children?: React.ReactNode | ((state: { pressed: boolean }) => React.ReactNode);
-      onPress?: (e: unknown) => void;
-      onLongPress?: (e: unknown) => void;
-      disabled?: boolean;
-      testID?: string;
-      accessibilityRole?: string;
-      accessibilityLabel?: string;
-    }
-  > {
-    static displayName = "Pressable";
-    render() {
-      const { children, onPress, onLongPress, disabled, ...rest } = this.props;
-      const child = typeof children === "function" ? children({ pressed: false }) : children;
-      return React.createElement(
-        "Pressable",
-        {
-          ...rest,
-          onPress: disabled ? undefined : onPress,
-          onLongPress: disabled ? undefined : onLongPress,
-          disabled,
-          accessibilityRole: rest.accessibilityRole ?? "button",
-        },
-        child,
-      );
-    }
-  };
-
-  type FlatListProps = {
-    data?: ReadonlyArray<unknown>;
-    renderItem?: (info: { item: unknown; index: number }) => React.ReactNode;
-    keyExtractor?: (item: unknown, index: number) => string;
-    ListHeaderComponent?: React.ReactNode | React.ComponentType;
-    ListFooterComponent?: React.ReactNode | React.ComponentType;
-    ListEmptyComponent?: React.ReactNode | React.ComponentType;
-    ItemSeparatorComponent?: React.ComponentType;
-    testID?: string;
-    [key: string]: unknown;
-  };
-
-  const FlatList = class FlatList extends React.Component<FlatListProps> {
-    static displayName = "FlatList";
-    render() {
-      const {
-        data = [],
-        renderItem,
-        keyExtractor,
-        ListHeaderComponent,
-        ListFooterComponent,
-        ListEmptyComponent,
-        ItemSeparatorComponent,
-        ...rest
-      } = this.props;
-
-      const renderMaybe = (c: React.ReactNode | React.ComponentType | undefined) => {
-        if (c == null) return null;
-        if (typeof c === "function") return React.createElement(c as React.ComponentType);
-        return c as React.ReactNode;
-      };
-
-      const items =
-        data.length === 0
-          ? [renderMaybe(ListEmptyComponent)]
-          : data.flatMap((item, index) => {
-              const row = renderItem?.({ item, index }) ?? null;
-              const key = keyExtractor ? keyExtractor(item, index) : String(index);
-              const nodes: React.ReactNode[] = [
-                React.createElement(React.Fragment, { key }, row),
-              ];
-              if (ItemSeparatorComponent && index < data.length - 1) {
-                nodes.push(
-                  React.createElement(ItemSeparatorComponent, { key: `sep-${key}` }),
-                );
-              }
-              return nodes;
-            });
-
-      return React.createElement(
-        "RCTScrollView",
-        rest,
-        renderMaybe(ListHeaderComponent),
-        React.createElement("View", null, ...items),
-        renderMaybe(ListFooterComponent),
-      );
-    }
-  };
-
-  const SectionList = FlatList;
-  const ActivityIndicator = createHostComponent(React, "ActivityIndicator");
-  const Modal = createHostComponent(React, "Modal");
-  const RefreshControl = createHostComponent(React, "RefreshControl");
-  const SafeAreaView = createHostComponent(React, "SafeAreaView");
-  const KeyboardAvoidingView = createHostComponent(React, "KeyboardAvoidingView");
-  const StatusBar = createHostComponent(React, "StatusBar", {
-    statics: { setBarStyle: noop, setHidden: noop, setNetworkActivityIndicatorVisible: noop },
-  });
-  const Switch = createHostComponent(React, "RCTSwitch");
-  const TouchableOpacity = createHostComponent(React, "TouchableOpacity");
-  const TouchableHighlight = createHostComponent(React, "TouchableHighlight");
-  const TouchableWithoutFeedback = createHostComponent(React, "TouchableWithoutFeedback");
-  const Button = createHostComponent(React, "Button");
 
   const Platform = createPlatform(config.platform);
   const Dimensions = createDimensions(config.window);
@@ -213,98 +90,80 @@ export function createReactNativePublicAPI(config: ResolvedConfig) {
   const PixelRatio = createPixelRatio();
   const Appearance = createAppearance();
   const AccessibilityInfo = createAccessibilityInfo();
-  const AppState = createAppState();
-  const Linking = createLinking();
-  const Vibration = createVibration();
-  const Clipboard = createClipboard();
   const Settings = createSettings();
   const InteractionManager = createInteractionManager();
-  const StyleSheet = StyleSheetImpl();
+  const Vibration = createVibration();
+  const Clipboard = createClipboard();
+  const StyleSheet = createStyleSheet();
+  const NativeModules = createNativeModules(config.window);
+  const TurboModuleRegistry = createTurboModuleRegistry(NativeModules);
+  const UIManager = createUIManager();
+  const NativeComponentRegistry = createNativeComponentRegistry();
+  const requireNativeComponent = createRequireNativeComponent();
+  const { codegenNativeComponent, codegenNativeCommands } = createCodegenHelpers(React);
 
-  const Animated = {
-    View,
-    Text,
-    Image,
-    ScrollView,
-    FlatList,
-    createAnimatedComponent: <T>(c: T) => c,
-    Value: class AnimatedValue {
-      _value: number;
-      constructor(v = 0) {
-        this._value = v;
-      }
-      setValue(v: number) {
-        this._value = v;
-      }
-      addListener() {
-        return "0";
-      }
-      removeListener = noop;
-      removeAllListeners = noop;
-      stopAnimation = (cb?: (v: number) => void) => cb?.(this._value);
-      interpolate = () => this;
-      __getValue = () => this._value;
-    },
-    timing: (_v: unknown, _cfg: unknown) => ({
-      start: (cb?: (r: { finished: boolean }) => void) => cb?.({ finished: true }),
-      stop: noop,
-    }),
-    spring: (_v: unknown, _cfg: unknown) => ({
-      start: (cb?: (r: { finished: boolean }) => void) => cb?.({ finished: true }),
-      stop: noop,
-    }),
-    decay: (_v: unknown, _cfg: unknown) => ({
-      start: (cb?: (r: { finished: boolean }) => void) => cb?.({ finished: true }),
-      stop: noop,
-    }),
-    sequence: (anims: Array<{ start: Function }>) => ({
-      start: (cb?: Function) => {
-        for (const a of anims) a.start?.();
-        cb?.({ finished: true });
-      },
-      stop: noop,
-    }),
-    parallel: (anims: Array<{ start: Function }>) => ({
-      start: (cb?: Function) => {
-        for (const a of anims) a.start?.();
-        cb?.({ finished: true });
-      },
-      stop: noop,
-    }),
-    delay: () => ({ start: (cb?: Function) => cb?.({ finished: true }), stop: noop }),
-    event: () => noop,
-    add: (a: unknown, b: unknown) => ({ a, b }),
-    multiply: (a: unknown, b: unknown) => ({ a, b }),
-  };
+  const deviceEmitter = createDeviceEventEmitter();
+  const Keyboard = createKeyboard(new EventEmitter());
+  const BackHandler = createBackHandler(new EventEmitter());
+  const AppState = createAppStateWithEmitter(new EventEmitter());
+  const Linking = createLinkingWithEmitter(new EventEmitter());
 
-  const I18nManager = {
-    isRTL: false,
-    allowRTL: noop,
-    forceRTL: noop,
-    swapLeftAndRightInRTL: noop,
-    getConstants: () => ({ isRTL: false, doLeftAndRightSwapInRTL: true }),
-  };
+  const misc = createMiscApis(React);
+  const AssetRegistry = createAssetRegistry();
+  const AppRegistry = createAppRegistry();
+  const LogBox = createLogBox();
+  const PanResponder = createPanResponder();
+  const PermissionsAndroid = createPermissionsAndroid();
+
+  const useAnimatedValue = createUseAnimatedValue(React);
+  const useAnimatedValueXY = createUseAnimatedValueXY(React);
+  const useAnimatedColor = createUseAnimatedColor(React);
 
   return {
-    View,
-    Text,
-    TextInput,
-    Image,
-    ScrollView,
-    FlatList,
-    SectionList,
-    Pressable,
-    TouchableOpacity,
-    TouchableHighlight,
-    TouchableWithoutFeedback,
-    Button,
-    ActivityIndicator,
-    Modal,
-    RefreshControl,
-    SafeAreaView,
-    KeyboardAvoidingView,
-    StatusBar,
-    Switch,
+    View: components.View,
+    Text: components.Text,
+    TextInput: components.TextInput,
+    Image: components.Image,
+    ImageBackground: components.ImageBackground,
+    ScrollView: components.ScrollView,
+    FlatList: lists.FlatList,
+    SectionList: lists.SectionList,
+    VirtualizedList: lists.VirtualizedList,
+    VirtualizedSectionList: lists.VirtualizedSectionList,
+    Pressable: components.Pressable,
+    TouchableOpacity: components.TouchableOpacity,
+    TouchableHighlight: components.TouchableHighlight,
+    TouchableWithoutFeedback: components.TouchableWithoutFeedback,
+    TouchableNativeFeedback: components.TouchableNativeFeedback,
+    Button: components.Button,
+    ActivityIndicator: components.ActivityIndicator,
+    Modal: components.Modal,
+    RefreshControl: components.RefreshControl,
+    SafeAreaView: components.SafeAreaView,
+    KeyboardAvoidingView: components.KeyboardAvoidingView,
+    InputAccessoryView: components.InputAccessoryView,
+    DrawerLayoutAndroid: components.DrawerLayoutAndroid,
+    ProgressBarAndroid: components.ProgressBarAndroid,
+    StatusBar: components.StatusBar,
+    Switch: components.Switch,
+
+    // Not a public index.js getter, but required by react-native-svg (Touchable.Mixin)
+    Touchable: {
+      Mixin: {
+        touchableGetInitialState: () => ({
+          touchable: { touchState: undefined, responderID: null },
+        }),
+        touchableHandleResponderGrant: noop,
+        touchableHandleResponderMove: noop,
+        touchableHandleResponderRelease: noop,
+        touchableHandleResponderTerminate: noop,
+        touchableHandleStartShouldSetResponder: () => true,
+        touchableGetHighlightDelayMS: () => 0,
+        touchableGetPressRectOffset: () => ({ left: 20, top: 20, right: 20, bottom: 20 }),
+      },
+      TOUCH_TARGET_DEBUG: false,
+    },
+
     StyleSheet,
     Platform,
     Dimensions,
@@ -319,48 +178,70 @@ export function createReactNativePublicAPI(config: ResolvedConfig) {
     Clipboard,
     Settings,
     InteractionManager,
+    BackHandler,
+    Keyboard,
+
     Animated,
-    Easing: {
-      linear: (t: number) => t,
-      ease: (t: number) => t,
-      quad: (t: number) => t * t,
-      cubic: (t: number) => t * t * t,
-      in: (f: (t: number) => number) => f,
-      out: (f: (t: number) => number) => f,
-      inOut: (f: (t: number) => number) => f,
-    },
-    I18nManager,
-    Alert: { alert: noop },
-    Share: { share: () => Promise.resolve({ action: "sharedAction" }) },
-    Keyboard: {
-      dismiss: noop,
-      addListener: () => ({ remove: noop }),
-      removeListener: noop,
-    },
-    LayoutAnimation: {
-      configureNext: noop,
-      create: noop,
-      Types: {},
-      Properties: {},
-      Presets: {},
-    },
-    NativeModules: {},
-    TurboModuleRegistry: {
-      get: () => null,
-      getEnforcing: () => new Proxy({}, { get: () => noop }),
-    },
-    UIManager: {
-      getViewManagerConfig: () => ({ Commands: {} }),
-      hasViewManagerConfig: () => false,
-      measure: noop,
-      measureInWindow: noop,
-      dispatchViewManagerCommand: noop,
-    },
-    findNodeHandle: () => null,
-    requireNativeComponent: (name: string) =>
-      createHostComponent(React, name.replace(/^(RCT|RK)/, "")),
-    processColor: (c: unknown) => c,
-    Display: { get: () => config.window },
+    Easing: misc.Easing,
+    useAnimatedValue,
+    useAnimatedValueXY,
+    useAnimatedColor,
+
+    unstable_DEFAULT_INITIAL_NUM_TO_RENDER: DEFAULT_INITIAL_NUM_TO_RENDER,
+
+    EventEmitter,
+    NativeEventEmitter,
+    DeviceEventEmitter: deviceEmitter,
+    NativeAppEventEmitter: deviceEmitter,
+
+    NativeModules,
+    TurboModuleRegistry,
+    UIManager,
+    NativeComponentRegistry,
+    requireNativeComponent,
+    codegenNativeComponent,
+    codegenNativeCommands,
+    findNodeHandle: misc.findNodeHandle,
+    processColor: misc.processColor,
+
+    AppRegistry,
+    LogBox,
+    AssetRegistry,
+    PanResponder,
+    PermissionsAndroid,
+
+    I18nManager: misc.I18nManager,
+    Alert: misc.Alert,
+    Share: misc.Share,
+    LayoutAnimation: misc.LayoutAnimation,
+    ToastAndroid: misc.ToastAndroid,
+    ActionSheetIOS: misc.ActionSheetIOS,
+    Systrace: misc.Systrace,
+    DevSettings: misc.DevSettings,
+    DevMenu: misc.DevMenu,
+    Networking: misc.Networking,
+    PushNotificationIOS: misc.PushNotificationIOS,
+    UTFSequence: misc.UTFSequence,
+    ReactNativeVersion: misc.ReactNativeVersion,
+    RootTagContext: misc.RootTagContext,
+    VirtualViewMode: misc.VirtualViewMode,
+    DeviceInfo: misc.DeviceInfo,
+    PlatformColor: misc.PlatformColor,
+    DynamicColorIOS: misc.DynamicColorIOS,
+    usePressability: misc.usePressability,
+    registerCallableModule: misc.registerCallableModule,
+
+    unstable_NativeText: misc.unstable_NativeText,
+    unstable_NativeView: misc.unstable_NativeView,
+    unstable_TextAncestorContext: misc.unstable_TextAncestorContext,
+    experimental_LayoutConformance: misc.experimental_LayoutConformance,
+    unstable_VirtualArray: misc.unstable_VirtualArray,
+    unstable_VirtualColumn: misc.unstable_VirtualColumn,
+    unstable_VirtualColumnGenerator: misc.unstable_VirtualColumnGenerator,
+    unstable_VirtualRow: misc.unstable_VirtualRow,
+    unstable_VirtualView: misc.unstable_VirtualView,
+    unstable_createVirtualCollectionView: misc.unstable_createVirtualCollectionView,
+    unstable_getScrollParent: misc.unstable_getScrollParent,
   };
 }
 

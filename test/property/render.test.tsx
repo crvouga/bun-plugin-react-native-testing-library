@@ -1,12 +1,11 @@
 import { describe, expect, test } from "bun:test";
-import * as React from "react";
+
 import { fireEvent, render } from "@testing-library/react-native";
 import fc from "fast-check";
 import { Counter } from "../example-app/Counter.tsx";
 import { Greeting } from "../example-app/Greeting.tsx";
 import { TodoList } from "../example-app/TodoList.tsx";
-
-const SEED = Number(process.env.RN_BUN_FC_SEED ?? "0x5a17e0e1");
+import { fcOpts } from "../fc-opts.ts";
 
 /** Printable strings safe for RN Text — allow unicode/emoji/RTL, ban C0 controls. */
 const rnString = fc
@@ -29,9 +28,9 @@ describe("property: Greeting rendering via RNTL", () => {
         }
         await screen.unmount();
       }),
-      { numRuns: 100, seed: SEED },
+      fcOpts,
     );
-  }, 120_000);
+  }, 30_000);
 });
 
 describe("property: Counter model-based fireEvent", () => {
@@ -54,9 +53,9 @@ describe("property: Counter model-based fireEvent", () => {
         }
         await screen.unmount();
       }),
-      { numRuns: 100, seed: SEED },
+      fcOpts,
     );
-  }, 180_000);
+  }, 30_000);
 });
 
 describe("property: TodoList model-based add/remove", () => {
@@ -101,7 +100,7 @@ describe("property: TodoList model-based add/remove", () => {
           await screen.unmount();
         },
       ),
-      { numRuns: 100, seed: SEED },
+      fcOpts,
     );
-  }, 180_000);
+  }, 30_000);
 });

@@ -28,6 +28,25 @@ export function createHostComponent(
 ): ReactNS.ComponentClass<HostComponentProps> {
   class Host extends React.Component<HostComponentProps> {
     static displayName = hostName;
+    // Native host refs expose measure* — required by react-navigation headers etc.
+    measure = (
+      callback: (x: number, y: number, width: number, height: number, pageX: number, pageY: number) => void,
+    ) => {
+      callback(0, 0, 100, 44, 0, 0);
+    };
+    measureInWindow = (callback: (x: number, y: number, width: number, height: number) => void) => {
+      callback(0, 0, 100, 44);
+    };
+    measureLayout = (
+      _relativeToNativeNode: unknown,
+      onSuccess: (left: number, top: number, width: number, height: number) => void,
+      _onFail?: () => void,
+    ) => {
+      onSuccess(0, 0, 100, 44);
+    };
+    setNativeProps = noop;
+    focus = noop;
+    blur = noop;
     render() {
       const { children, ...rest } = this.props;
       return React.createElement(hostName, rest, children);

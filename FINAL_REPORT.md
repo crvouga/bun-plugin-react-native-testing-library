@@ -1,46 +1,31 @@
 # Final report — bun-plugin-react-native-testing-library
 
-## What works
+## Status
 
-- RNTL 14 async `render` / `fireEvent` under `bun test` with a single `bunfig.toml` preload
-- Public `react-native` surface via `mock.module` (View, Text, Pressable, TextInput, FlatList, StyleSheet, Platform, Dimensions, useWindowDimensions, Animated JS driver, …)
-- Metro-style platform extension resolution (`.ios` / `.android` / `.native`)
-- Asset import stubs
-- Flow / Hermes transform via `@react-native/babel-preset` + memory/disk cache (for residual deep loads)
-- Unit, property (fast-check ≥100 runs), and spawned-subprocess integration tests
-- Example app: Counter, Greeting, TodoList (FlatList mock), ThemedBox + snapshot
+Real-world React Native library coverage with property-based tests is implemented and green on **Bun 1.4.0**.
 
-## What is stubbed / unsupported
+## What landed
 
-- Animated **native** driver (forced off)
-- Real VirtualizedList windowing (FlatList renders all items)
-- Native measure APIs (no-ops)
-- Bun CJS→ESM live `screen` binding — use `const screen = await render(...)` or `getScreen()`
-- Direct `onLoad` of `node_modules/react-native/**` (Bun 1.4.0 #10083 — empty modules)
+1. **Full RN public mock** — all ~96 `react-native/index.js` getters plus `Touchable.Mixin` for svg; realistic hosts (Pressable→accessible View, Modal `visible`, SectionList, Animated, EventEmitter family, PanResponder, codegen*, measure* on refs).
+2. **`DEEP_PATHS` table** — 30+ `react-native/Libraries/*` specifiers mocked so third-party packages never hit Flow sources.
+3. **Library auto-shims** (`libraryMocks: "auto"`) — reanimated, worklets, gesture-handler, safe-area, screens, async-storage, skia, mmkv, device-info, linear-gradient, webview, svg.
+4. **Env shims** — `jest.advanceTimersByTimeAsync` (+ friends), `document` / `window.history`, `getScreen()` from cwd.
+5. **Tests**
+   - Contract: RN exports, deep-imports, matchers, library registry
+   - Property: tree, interactions, lists, Animated/APIs, timers, Flow/resolve/assets, render models
+   - Sandbox: `test/real-world/` with 18 libraries, property-heavy
+   - Integration: spawns sandbox `bun test` (skip via `RN_BUN_SKIP_REAL_WORLD=1`)
 
-## Exact versions tested
+## Verification (Bun 1.4.0)
 
-| Package | Version |
-| --- | --- |
-| Bun | 1.4.0 |
-| react | 19.2.8 |
-| react-native | 0.87.1 |
-| @testing-library/react-native | 14.0.1 |
-| test-renderer | 1.2.0 |
-| fast-check | 4.9.0 |
-| @babel/core | 7.29.x |
-| @react-native/babel-preset | 0.87.1 |
+- Root: `bun test` → unit + property + contract + example-app + integration
+- Sandbox: `bun run test:real-world` → 19 pass / 0 fail
+- No jest/metro in direct dependencies
 
-## Test / coverage
+## Fragile assumptions
 
-```
-bun test --coverage
-# 43 pass, 0 fail
-# All files line coverage: 91.70% (≥ 85% acceptance)
-```
-
-## Three most fragile assumptions a Bun upgrade could break
-
-1. **`mock.module` vs runtime `plugin()` ordering** — registering the plugin *before* mocks lets `onResolve` bypass `mock.module("react-native")` and load real Flow sources. Preload must keep mocks-first.
-2. **`mock.module` resolution context** — specifier mocks resolve relative to the calling module; preload inside this package must also mock the cwd-absolute `react-native` path or consumers see the real index.js.
-3. **Runtime `onLoad` of `node_modules`** — today it fires but ignores returned contents (#10083). If Bun “fixes” this partially or changes `could_be_plugin`, the namespace strategy and smoke probe expectations need re-validation.
+- Bun `mock.module` must run **before** `plugin()` for `react-native`
+- Bare specifiers still skip runtime `onResolve` — deep paths need explicit `mock.module`
+- RNTL named `screen` export stays stale under Bun CJS→ESM
+- Skia uses host fallback (CanvasKit init is async)
+- Prefer `fireEvent` over `userEvent` in long property loops under Bun fake timers

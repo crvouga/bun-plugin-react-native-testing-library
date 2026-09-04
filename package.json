@@ -18,8 +18,12 @@
     "README.md"
   ],
   "scripts": {
-    "test": "bun test",
-    "test:coverage": "bun test --coverage",
+    "test": "bun test --bail test/unit test/property test/contract test/example-app",
+    "test:integration": "bun test --bail test/integration",
+    "test:all": "bun test --bail test/unit test/property test/contract test/example-app test/integration",
+    "test:coverage": "bun test --bail --coverage test/unit test/property test/contract test/example-app",
+    "test:real-world": "bun test --bail --cwd test/real-world",
+    "test:soak": "RN_BUN_FC_RUNS=100 bun test --bail test/unit test/property test/contract test/example-app",
     "typecheck": "tsc --noEmit"
   },
   "peerDependencies": {
