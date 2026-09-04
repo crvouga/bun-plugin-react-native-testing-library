@@ -1,0 +1,5 @@
+# Drop this into your project (or merge the [test] section into an existing bunfig.toml).
+# Then write RNTL tests exactly as documented by @testing-library/react-native.
+
+[test]
+preload = ["bun-plugin-react-native-testing-library/preload"]

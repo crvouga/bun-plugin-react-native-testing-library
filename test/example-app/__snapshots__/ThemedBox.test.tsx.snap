@@ -1,0 +1,40 @@
+// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
+
+exports[`ThemedBox snapshot 1`] = `
+{
+  "$$typeof": Symbol(react.test.json),
+  "children": [
+    {
+      "$$typeof": Symbol(react.test.json),
+      "children": [
+        "ios-box",
+      ],
+      "props": {
+        "testID": "themed-label",
+      },
+      "type": "Text",
+    },
+    {
+      "$$typeof": Symbol(react.test.json),
+      "children": [
+        "390",
+        "x",
+        "844",
+      ],
+      "props": {
+        "testID": "themed-size",
+      },
+      "type": "Text",
+    },
+  ],
+  "props": {
+    "accessibilityLabel": "ios-box",
+    "style": {
+      "backgroundColor": "#eef",
+      "padding": 8,
+    },
+    "testID": "themed-box",
+  },
+  "type": "View",
+}
+`;

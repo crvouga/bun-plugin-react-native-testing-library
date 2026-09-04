@@ -1,0 +1,46 @@
+{
+  "name": "bun-plugin-react-native-testing-library",
+  "version": "0.1.0",
+  "description": "Bun runtime plugin that makes @testing-library/react-native work under bun test with zero Jest and zero Metro",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "bun": ">=1.4.0"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./preload": "./src/preload.ts",
+    "./screen": "./src/screen.ts"
+  },
+  "files": [
+    "src",
+    "bunfig.example.toml",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "bun test",
+    "test:coverage": "bun test --coverage",
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "@testing-library/react-native": ">=14.0.0",
+    "react": ">=19.0.0",
+    "react-native": ">=0.78.0",
+    "test-renderer": ">=1.0.0"
+  },
+  "dependencies": {
+    "@babel/core": "^7.26.0",
+    "@react-native/babel-preset": "0.87.1"
+  },
+  "devDependencies": {
+    "@testing-library/react-native": "14.0.1",
+    "@types/babel__core": "^7.20.5",
+    "@types/bun": "latest",
+    "@types/react": "^19.1.1",
+    "fast-check": "4.9.0",
+    "react": "19.2.8",
+    "react-native": "0.87.1",
+    "test-renderer": "1.2.0",
+    "typescript": "^5.8.2"
+  }
+}

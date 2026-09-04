@@ -1,0 +1,5 @@
+[test]
+preload = ["./src/preload.ts"]
+
+# Coverage is enabled via `bun test --coverage` (see package.json scripts).
+# Ignore test fixtures and node_modules when collecting.
