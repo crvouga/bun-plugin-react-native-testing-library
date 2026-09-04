@@ -94,12 +94,30 @@ When a package is installed in the consumer, preload auto-registers a shim (`lib
 | `react-native-paper` | no shim | 5.15.3 | |
 | `zustand` / `@tanstack/react-query` / RTK / `react-hook-form` | no shim | current | Pure JS |
 
+### Expo SDK 57
+
+Proven in [`test/real-world-expo/`](test/real-world-expo/). Requires `expo-modules-core` (and optionally `jest-expo` for the native-module mock table).
+
+| Library | Strategy | Notes |
+| --- | --- | --- |
+| `expo-modules-core` | jest-expo-compatible `requireNativeModule` + `globalThis.expo` polyfill | Auto-proxy when table/package mock missing |
+| `expo-constants` / `expo-device` / `expo-application` / `expo-localization` | constants from `app.json` | |
+| `expo-secure-store` / `expo-clipboard` / `expo-crypto` | in-memory / seeded | |
+| `expo-file-system` | in-memory VFS (+ legacy API) | |
+| `expo-sqlite` | `bun:sqlite` memory DBs | |
+| `expo-image` / `expo-linear-gradient` / `expo-blur` / `@expo/vector-icons` / `expo-font` | host / Text shims | |
+| `expo-camera` / `expo-location` / `expo-notifications` / `expo-image-picker` / `expo-sensors` / `expo-haptics` | granted permissions + deterministic models | |
+| `expo-av` / `expo-audio` / `expo-splash-screen` / `expo-status-bar` / `expo-updates` / `expo-linking` | behavioral stubs | |
+| `expo-router` | real package + `testing-library` `renderRouter` | In-memory routes; file-based `app/` not required |
+
 ```bash
-bun test                  # all suites incl. real-world (spawned) — fail-fast
-bun run check             # format + lint + typecheck + test
-bun run test:real-world   # consumer sandbox only
-bun run test:soak         # RN_BUN_FC_RUNS=100 property soak
-RN_BUN_SKIP_REAL_WORLD=1 bun test  # skip spawned real-world
+bun test                       # all suites incl. real-world + expo (spawned) — fail-fast
+bun run check                  # format + lint + typecheck + test + canaries
+bun run test:real-world
+bun run test:real-world-expo
+bun run test:canaries          # deliberate sabotages must fail probes
+bun run test:soak
+RN_BUN_SKIP_REAL_WORLD=1 bun test
 ```
 
 ## Architecture
@@ -159,12 +177,13 @@ Pin Bun in CI (this repo was verified on **1.4.0**). Re-run `test/integration/sm
 
 ```bash
 bun install
-bun run check             # format + lint + typecheck + all tests
-bun test                  # fail-fast suite (includes real-world spawn)
+bun run check             # format + lint + typecheck + all tests + canaries
+bun test                  # fail-fast suite (includes real-world + expo spawns)
 bun test --coverage
 ```
 
-Property tests use `fast-check` (`RN_BUN_FC_RUNS`, default 40; `RN_BUN_FC_SEED` for replay).
+Property tests use `fast-check` (`RN_BUN_FC_RUNS`, default 40–100; `RN_BUN_FC_SEED` for replay).
+`bun run test:canaries` applies deliberate sabotages to mocks and asserts focused probes fail.
 
 ## License
 

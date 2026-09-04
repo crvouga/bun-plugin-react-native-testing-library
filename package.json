@@ -21,13 +21,15 @@
     "test": "bun test --bail",
     "test:coverage": "bun test --bail --coverage",
     "test:real-world": "bun test --bail --cwd test/real-world",
+    "test:real-world-expo": "bun test --bail --cwd test/real-world-expo",
+    "test:canaries": "bun run scripts/run-canaries.ts",
     "test:soak": "RN_BUN_FC_RUNS=100 bun test --bail",
     "typecheck": "tsc --noEmit",
     "format": "biome format --write .",
     "format:check": "biome format .",
     "lint": "biome lint --error-on-warnings .",
     "lint:fix": "biome lint --write --error-on-warnings .",
-    "check": "bun run format:check && bun run lint && bun run typecheck && bun run test"
+    "check": "bun run format:check && bun run lint && bun run typecheck && bun run test && bun run test:canaries"
   },
   "peerDependencies": {
     "@testing-library/react-native": ">=14.0.0",

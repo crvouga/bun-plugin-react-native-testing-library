@@ -46,7 +46,7 @@
         "noNonNullAssertion": "off",
         "noParameterAssign": "off",
         "useConst": "error",
-        "useTemplate": "off"
+        "useImportType": "off"
       },
       "suspicious": {
         "noExplicitAny": "off",
@@ -71,6 +71,7 @@
       "includes": [
         "node_modules/**",
         "test/real-world/node_modules/**",
+        "test/real-world-expo/node_modules/**",
         ".virt-rn-fixture/**",
         "coverage/**",
         "dist/**"

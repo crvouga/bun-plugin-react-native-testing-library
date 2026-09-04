@@ -9,7 +9,10 @@ import { RNTL_MATCHER_NAMES } from "../../src/rntl.ts";
 
 describe("contract: RNTL matchers", () => {
   test("known matcher names are documented", () => {
-    expect(RNTL_MATCHER_NAMES.length).toBeGreaterThanOrEqual(14);
+    expect(RNTL_MATCHER_NAMES.length).toBe(18);
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const shipped = Object.keys(require("@testing-library/react-native/matchers")).sort();
+    expect([...RNTL_MATCHER_NAMES].sort()).toEqual(shipped);
   });
 
   test("toBeOnTheScreen / toHaveTextContent / toBeVisible", async () => {

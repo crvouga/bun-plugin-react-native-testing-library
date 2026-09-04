@@ -32,6 +32,34 @@ export function installJestShims(): void {
 }
 
 function patchJest(existing: JestLike): void {
+  if (typeof existing.fn !== "function") {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { mock } = require("bun:test") as { mock: (...args: unknown[]) => unknown };
+      existing.fn = (...args: unknown[]) => mock(...args);
+    } catch {
+      existing.fn = (impl?: (...a: unknown[]) => unknown) => {
+        const f = (...a: unknown[]) => (impl ? impl(...a) : undefined);
+        (f as { _isMockFunction?: boolean })._isMockFunction = true;
+        return f;
+      };
+    }
+  }
+
+  if (typeof existing.setSystemTime !== "function") {
+    existing.setSystemTime = (now: number | Date) => {
+      const ms = typeof now === "number" ? now : now.getTime();
+      // Best-effort: Bun may not support clock mocking; keep a no-op-safe stub.
+      try {
+        const enableFakeTimers = existing["useFakeTimers"] as (() => void) | undefined;
+        enableFakeTimers?.();
+        void ms;
+      } catch {
+        // ignore
+      }
+    };
+  }
+
   if (typeof existing.getRealSystemTime !== "function") {
     existing.getRealSystemTime = () => Date.now();
   }

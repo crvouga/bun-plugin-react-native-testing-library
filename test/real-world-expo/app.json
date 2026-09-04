@@ -1,0 +1,9 @@
+{
+  "expo": {
+    "name": "ExpoSandbox",
+    "slug": "expo-sandbox",
+    "version": "1.0.0",
+    "scheme": "yourscheme",
+    "platforms": ["ios", "android"]
+  }
+}

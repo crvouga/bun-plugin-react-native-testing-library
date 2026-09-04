@@ -36,8 +36,10 @@ export function registerRntlScreenFix(): void {
 export const RNTL_MATCHER_NAMES = [
   "toBeBusy",
   "toBeChecked",
+  "toBeCollapsed",
   "toBeDisabled",
   "toBeEmptyElement",
+  "toBeEnabled",
   "toBeExpanded",
   "toBeOnTheScreen",
   "toBePartiallyChecked",

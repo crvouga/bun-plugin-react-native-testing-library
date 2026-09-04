@@ -20,6 +20,11 @@ describe("contract: library registry", () => {
     expect(names).toContain("worklets");
     expect(names).toContain("linear-gradient");
     expect(names).toContain("webview");
+    expect(names).toContain("expo");
+    expect(names).toContain("expo-ui");
+    expect(names).toContain("expo-system");
+    expect(names).toContain("expo-hardware");
+    expect(names).toContain("expo-data");
   });
 
   test("libraryMocks: false skips all", () => {

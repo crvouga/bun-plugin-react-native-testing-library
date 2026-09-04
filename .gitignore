@@ -9,3 +9,4 @@ coverage/
 dist/
 *.tsbuildinfo
 test/real-world/node_modules/
+test/real-world-expo/node_modules/

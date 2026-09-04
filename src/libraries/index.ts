@@ -14,6 +14,7 @@ import { reanimatedShim, workletsShim } from "./reanimated.ts";
 import { skiaShim, mmkvShim } from "./skia-mmkv.ts";
 import { asyncStorageShim, deviceInfoShim } from "./storage.ts";
 import { linearGradientShim, svgShim, webviewShim } from "./extras.ts";
+import { expoCoreShim, expoUiShim, expoSystemShim, expoHardwareShim, expoDataShim } from "./expo/index.ts";
 
 export const LIBRARY_REGISTRY: readonly LibraryShim[] = [
   workletsShim,
@@ -28,6 +29,11 @@ export const LIBRARY_REGISTRY: readonly LibraryShim[] = [
   linearGradientShim,
   webviewShim,
   svgShim,
+  expoCoreShim,
+  expoUiShim,
+  expoSystemShim,
+  expoHardwareShim,
+  expoDataShim,
 ];
 
 export type RegisterLibraryMocksResult = {
