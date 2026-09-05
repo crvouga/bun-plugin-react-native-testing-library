@@ -21,7 +21,13 @@ import Animated, { useSharedValue } from "react-native-reanimated";
 import * as Localize from "react-native-localize";
 import * as fc from "fast-check";
 
-const opts = { numRuns: 20, endOnFailure: true as const, seed: 0x5a17e0e1 };
+const SEED = Number(process.env.RN_BUN_FC_SEED ?? "0x5a17e0e1");
+const RUNS = Number(process.env.RN_BUN_FC_RUNS ?? "20");
+const opts = {
+  numRuns: Number.isFinite(RUNS) && RUNS > 0 ? RUNS : 20,
+  endOnFailure: true as const,
+  seed: Number.isFinite(SEED) ? SEED : 0x5a17e0e1,
+};
 const Stack = createNativeStackNavigator();
 
 type Model = {
@@ -95,6 +101,8 @@ function Home({
         <Picker.Item label="c" value="c" />
       </Picker>
       <Slider testID="slider" value={slider} minimumValue={0} maximumValue={10} onValueChange={setSlider} />
+      <Text testID="slider-value">{String(slider)}</Text>
+      <Text testID="picker-value">{picker}</Text>
       <LinearGradient testID="grad" colors={["#f00", "#00f"]} style={{ height: 8 }} />
       <Animated.View testID="anim" style={{ opacity: 1, height: 4 }} />
       <WebView testID="wv" source={{ uri: "https://example.com" }} style={{ height: 1 }} />
@@ -238,10 +246,24 @@ class NetInfoAssertCmd implements fc.AsyncCommand<Model, Real> {
   check = () => true;
   async run(m: Model, _r: Real): Promise<void> {
     const s = await NetInfo.fetch();
-    expect(typeof s.isConnected).toBe("boolean");
-    m.connected = !!s.isConnected;
+    expect(s.isConnected).toBe(m.connected);
   }
-  toString = () => "netInfo";
+  toString = () => "netInfoAssert";
+}
+
+class NetInfoSetCmd implements fc.AsyncCommand<Model, Real> {
+  constructor(readonly connected: boolean) {}
+  check = () => true;
+  async run(m: Model, _r: Real): Promise<void> {
+    m.connected = this.connected;
+    const api = NetInfo as typeof NetInfo & {
+      setStateForTests?: (p: { isConnected: boolean; isInternetReachable: boolean }) => void;
+    };
+    api.setStateForTests?.({ isConnected: this.connected, isInternetReachable: this.connected });
+    const s = await NetInfo.fetch();
+    expect(!!s.isConnected).toBe(m.connected);
+  }
+  toString = () => `netInfoSet(${this.connected})`;
 }
 
 class SliderCmd implements fc.AsyncCommand<Model, Real> {
@@ -252,6 +274,7 @@ class SliderCmd implements fc.AsyncCommand<Model, Real> {
     await act(async () => {
       fireEvent(r.screen.getByTestId("slider"), "valueChange", this.value);
     });
+    expect(r.screen.getByTestId("slider-value")).toHaveTextContent(String(m.slider));
   }
   toString = () => `slider(${this.value})`;
 }
@@ -264,6 +287,7 @@ class PickerCmd implements fc.AsyncCommand<Model, Real> {
     await act(async () => {
       fireEvent(r.screen.getByTestId("picker"), "valueChange", this.value);
     });
+    expect(r.screen.getByTestId("picker-value")).toHaveTextContent(m.picker);
   }
   toString = () => `picker(${this.value})`;
 }
@@ -278,6 +302,7 @@ const allCommands = [
     .tuple(fc.stringMatching(/^[a-z]{1,4}$/), fc.stringMatching(/^[A-Za-z0-9]{0,6}$/))
     .map(([k, v]) => new StorageRoundTripCmd(k, v)),
   fc.constant(new NetInfoAssertCmd()),
+  fc.boolean().map((c) => new NetInfoSetCmd(c)),
   fc.integer({ min: 0, max: 10 }).map((n) => new SliderCmd(n)),
   fc.constantFrom("a", "b", "c").map((v) => new PickerCmd(v)),
 ];

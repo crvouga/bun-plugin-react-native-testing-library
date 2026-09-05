@@ -1,5 +1,9 @@
 /**
- * Local replica of .github/workflows/ci.yml (except the main-only release/publish job).
+ * Local replica of CI (except the main-only release/publish job).
+ *
+ * Release law: the only release criteria live in `bun check`.
+ * This script may set up the environment and run commitlint, then delegates
+ * entirely to `bun check`.
  *
  *   bun run check:full
  */
@@ -8,39 +12,21 @@ import { join } from "node:path";
 const root = join(import.meta.dir, "..");
 process.env.HUSKY = "0";
 
-type Finished = { label: string; seconds: number };
-
-const finished: Finished[] = [];
-const notes: string[] = [];
-
-function job(name: string): void {
-  console.log("");
-  console.log("=".repeat(72));
-  console.log(`  ${name}`);
-  console.log("=".repeat(72));
-}
-
-async function runStep(label: string, argv: string[], opts?: { env?: Record<string, string> }): Promise<void> {
+async function runStep(label: string, argv: string[]): Promise<void> {
   console.log("");
   console.log(`▸ ${label}`);
   console.log(`  $ ${argv.join(" ")}`);
-  const started = performance.now();
   const proc = Bun.spawn(argv, {
     cwd: root,
     stdout: "inherit",
     stderr: "inherit",
-    env: { ...process.env, HUSKY: "0", ...opts?.env },
+    env: { ...process.env, HUSKY: "0" },
   });
   const code = await proc.exited;
-  const seconds = (performance.now() - started) / 1000;
   if (code !== 0) {
-    console.error("");
-    console.error(`check:full FAILED at "${label}" (exit ${code}, ${seconds.toFixed(1)}s)`);
-    console.error("This is the same command CI runs. Fix it, then re-run: bun run check:full");
+    console.error(`check:full FAILED at "${label}" (exit ${code})`);
     process.exit(code);
   }
-  console.log(`✓ ${label} (${seconds.toFixed(1)}s)`);
-  finished.push({ label, seconds });
 }
 
 async function git(args: string[]): Promise<{ code: number; stdout: string }> {
@@ -66,147 +52,43 @@ async function resolveBaseRef(): Promise<string | null> {
   return null;
 }
 
-function printCommitlintHelp(kind: "range" | "last"): void {
-  console.error("");
-  console.error(
-    kind === "range"
-      ? "One or more commits since the base branch failed Conventional Commits lint."
-      : "HEAD commit message failed Conventional Commits lint.",
-  );
-  console.error("");
-  console.error("Expected format:");
-  console.error("  <type>(optional-scope): <description>");
-  console.error("");
-  console.error("Examples that trigger a release:");
-  console.error("  feat: add new library shim");
-  console.error("  fix: correct Flow transform cache key");
-  console.error("  feat!: rename createReactNativePlugin options");
-  console.error("");
-  console.error("See README.md → Releasing");
-}
+console.log("bun-plugin-react-native-testing-library check:full");
+console.log("Delegates release criteria to: bun check");
 
-async function commitlintJob(): Promise<void> {
-  job("commitlint  (CI job)");
+await runStep("Install (frozen lockfile)", ["bun", "install", "--frozen-lockfile"]);
 
-  const branch = (await git(["rev-parse", "--abbrev-ref", "HEAD"])).stdout || "HEAD";
-  const onMain = branch === "main";
-  const base = await resolveBaseRef();
-
-  if (onMain) {
-    console.log("On main: CI treats commitlint as a warning on push (enforced on PRs).");
-    const started = performance.now();
-    const proc = Bun.spawn(["bunx", "commitlint", "--last", "--verbose"], {
-      cwd: root,
-      stdout: "inherit",
-      stderr: "inherit",
-    });
-    const code = await proc.exited;
-    const seconds = (performance.now() - started) / 1000;
-    if (code !== 0) {
-      console.warn(
-        "HEAD is not Conventional Commits. Enforced on PRs. On main, semantic-release still publishes a patch unless a feat/fix/BREAKING message selects a higher bump.",
-      );
-      printCommitlintHelp("last");
-    }
-    finished.push({ label: "Commitlint (--last, warning on main)", seconds });
-    notes.push("commitlint on main is warning-only (matches CI push); PRs still fail on bad messages");
-    return;
-  }
-
-  if (!base) {
-    notes.push("no main/origin/main ref; linted HEAD only — fetch origin to match PR commitlint");
-    console.warn("No main/origin/main ref found; linting HEAD only.");
-    await runStep("Commitlint (--last)", ["bunx", "commitlint", "--last", "--verbose"]);
-    return;
-  }
-
+const branch = (await git(["rev-parse", "--abbrev-ref", "HEAD"])).stdout || "HEAD";
+const onMain = branch === "main";
+const base = await resolveBaseRef();
+if (!onMain && base) {
   const from = (await git(["merge-base", base, "HEAD"])).stdout || base;
-  console.log(`Linting commits ${from}..HEAD (base ${base}, branch ${branch})`);
-  const started = performance.now();
+  console.log(`Commitlint ${from}..HEAD`);
   const proc = Bun.spawn(["bunx", "commitlint", "--from", from, "--to", "HEAD", "--verbose"], {
     cwd: root,
     stdout: "inherit",
     stderr: "inherit",
   });
   const code = await proc.exited;
-  const seconds = (performance.now() - started) / 1000;
-  if (code !== 0) {
-    printCommitlintHelp("range");
-    console.error("");
-    console.error(`check:full FAILED at "Commitlint" (exit ${code}, ${seconds.toFixed(1)}s)`);
-    process.exit(code);
-  }
-  console.log(`✓ Commitlint (${seconds.toFixed(1)}s)`);
-  finished.push({ label: "Commitlint", seconds });
-
-  try {
-    const pr = Bun.spawn(["gh", "pr", "view", "--json", "title", "--jq", ".title"], {
-      cwd: root,
-      stdout: "pipe",
-      stderr: "pipe",
-    });
-    const title = (await new Response(pr.stdout).text()).trim();
-    const prCode = await pr.exited;
-    if (prCode !== 0 || !title) {
-      notes.push("PR title not checked (no open PR / gh unavailable); CI still validates the title on pull_request");
-      return;
-    }
-
-    console.log(`Linting PR title: ${title}`);
-    const titleProc = Bun.spawn(["bunx", "commitlint"], {
-      cwd: root,
-      stdin: new TextEncoder().encode(`${title}\n`),
-      stdout: "inherit",
-      stderr: "inherit",
-    });
-    const titleStatus = await titleProc.exited;
-    if (titleStatus !== 0) {
-      console.error("");
-      console.error("PR title failed Conventional Commits lint (CI job: Validate PR title).");
-      console.error('Use a Conventional Commits title, e.g. "feat: add library shim".');
-      process.exit(titleStatus);
-    }
-    console.log("✓ PR title");
-  } catch {
-    notes.push("PR title not checked (gh not available); CI still validates the title on pull_request");
-  }
+  if (code !== 0) process.exit(code);
+} else {
+  console.log("Commitlint: warning-only on main / no base (matches CI push policy)");
 }
 
-console.log("bun-plugin-react-native-testing-library check:full");
-console.log("Mirrors .github/workflows/ci.yml — skip: release/publish (main + OIDC only)");
+await runStep("bun check (canonical release gate)", ["bun", "check"]);
 
-job("install");
-await runStep("Install (frozen lockfile)", ["bun", "install", "--frozen-lockfile"]);
-
-await commitlintJob();
-
-job("quality  (CI job)");
-await runStep("Format check", ["bun", "run", "format:check"]);
-await runStep("Lint", ["bun", "run", "lint"]);
-await runStep("Typecheck", ["bun", "run", "typecheck"]);
-await runStep("Verify package", ["bun", "run", "verify-package"]);
-
-job("test  (CI job)");
-await runStep("Run tests", ["bun", "test", "--bail"]);
-await runStep("Canaries", ["bun", "run", "test:canaries"]);
-
-const total = finished.reduce((sum, step) => sum + step.seconds, 0);
-const useColor = Boolean(process.stdout.isTTY) && !process.env.NO_COLOR;
-const green = (text: string): string => (useColor ? `\x1b[32m${text}\x1b[0m` : text);
-const boldGreen = (text: string): string => (useColor ? `\x1b[1;32m${text}\x1b[0m` : text);
-
-console.log("");
-console.log(green("=".repeat(72)));
-console.log(boldGreen("  All local CI gates passed"));
-console.log(green("  This change will pass GitHub Actions CI."));
-console.log(green("=".repeat(72)));
-for (const step of finished) {
-  console.log(`  ${step.seconds.toFixed(1).padStart(6)}s  ${step.label}`);
+const report = join(root, "compat", "release-report.json");
+const text = await Bun.file(report).text();
+if (!text.includes("RELEASE READY") && !JSON.parse(text).ok) {
+  console.error("check:full: release report missing ok=true");
+  process.exit(1);
 }
-console.log(`  ${total.toFixed(1).padStart(6)}s  total`);
-console.log("");
-console.log("Skipped: release (semantic-release on main only).");
-for (const note of notes) {
-  console.log(`Note: ${note}`);
+const sentinel = "RELEASE READY: bun check passed";
+// scripts/check.ts prints sentinel to stdout; report stores it when ok
+const parsed = JSON.parse(text) as { ok: boolean; sentinel: string | null };
+if (!parsed.ok || parsed.sentinel !== sentinel) {
+  console.error("check:full: canonical RELEASE READY sentinel missing from report");
+  process.exit(1);
 }
+
 console.log("");
+console.log("check:full OK — same release gate as GitHub Actions.");

@@ -78,16 +78,33 @@ plugin(createReactNativePlugin({ platform: "ios", debug: true }));
 
 ## Compatibility
 
-| Tool | Tested version |
-| --- | --- |
-| Bun | **1.4.0** (`engines.bun: ">=1.4.0"`) |
-| react | 19.2.8 |
-| react-native | 0.87.1 |
-| @testing-library/react-native | 14.0.1 |
-| test-renderer | 1.2.x |
-| fast-check | 4.9.x |
+**Release law:** `bun check` is the only canonical release gate. A green run writes
+`compat/release-report.json` and prints `RELEASE READY: bun check passed`.
+`check:full`, CI, and the release job all consume that same gate (they may only
+add environment setup / OS / Bun version axes).
 
-No `jest`, `jest-expo`, or `metro` packages appear in this package's direct `dependencies` / `devDependencies`. Transitive peers may still pull `metro-runtime` (via `react-native`) and `jest-matcher-utils` (via RNTL).
+### Proven envelope (evidence-backed)
+
+| Axis | Proven |
+| --- | --- |
+| Bun | `1.4.0` (minimum) and latest stable (CI macOS axis) |
+| OS | Linux + macOS (`bun check` on both) |
+| Platform resolution | `ios` and `android` (`RN_BUN_PLATFORM`) |
+| react-native / react / test-renderer | Full clean-consumer matrix: **0.78 + React 19.0 + test-renderer 1.0**, **0.82 + 19.1 + 1.1**, **0.87 + 19.2 + 1.2**; light import jobs for intervening minors **0.79–0.86** |
+| `@testing-library/react-native` | **14.0.0** (minimum) and **14.0.1** |
+| Differential oracle | Deterministic RNTL traces under Bun plugin ≡ official RN Jest preset |
+
+Pinned sandbox versions used for third-party shims: React **19.2.8**, RN **0.87.1**, RNTL **14.0.1**, test-renderer **1.2.x**.
+
+Peer ranges in `package.json` advertise this envelope. If a matrix row fails, we narrow peers/README rather than skip the row.
+
+No `jest`, `jest-expo`, or `metro` packages appear in this package's direct `dependencies` / `devDependencies` (Jest exists only inside the nested oracle fixture). Transitive peers may still pull `metro-runtime` (via `react-native`) and `jest-matcher-utils` (via RNTL).
+
+### What this package does **not** claim
+
+- Correctness of real native SDKs (camera, payments, biometrics hardware, Firebase servers, etc.)
+- Pixel-perfect host rendering parity with iOS/Android
+- That every app on npm will pass without additional shims — only the **catalogued** packages under `test/real-world/` / `test/real-world-expo/` with statuses in `compat/coverage-manifest.json` (`behavioral` / `import-only` / `unsupported`)
 
 ## Options
 
@@ -109,7 +126,7 @@ Configure via `createReactNativePlugin(options)`, env vars, or optional `./rn-bu
 
 When a package is installed in the consumer, preload auto-registers a shim (`libraryMocks: "auto"`). Proven in [`test/real-world/`](test/real-world/) against the versions below.
 
-Fail-closed scanners (`test/contract/deep-path-inventory.test.ts`, `test/contract/import-surface.test.ts`) walk the sandbox catalog: every deep `react-native/Libraries|src/...` import must be in `DEEP_PATHS`, and every catalog package must `require` to a non-empty module with documented exports.
+Fail-closed scanners (`test/contract/deep-path-inventory.test.ts`, `test/contract/import-surface.test.ts`) walk the sandbox catalog: every deep `react-native/Libraries|src/...` import must be in `DEEP_PATHS`, every direct sandbox dependency must be catalogued (or infra-allowlisted), and every native surface must map to a registry shim. Coverage evidence is recorded in `compat/coverage-manifest.json`.
 
 | Library | Strategy | Version tested | Notes |
 | --- | --- | --- | --- |
@@ -144,6 +161,10 @@ Fail-closed scanners (`test/contract/deep-path-inventory.test.ts`, `test/contrac
 | `moti` | View host (`MotiView`) | 0.30.0 | |
 | `react-native-modal` | real JS | 13.0.2 | |
 | `@gorhom/bottom-sheet` | View host + provider | 5.2.8 | |
+| `react-native-maps` / `video` / `image-picker` / `share` / `bootsplash` / `config` / `biometrics` / `vision-camera` | host / stub APIs | pinned in sandbox | Unit-test import/render only — not native SDK correctness |
+| `react-native-keychain` | in-memory credentials | 10.0.0 | Behavioral model + canary |
+| `@react-native-firebase/*` | shared app lifecycle stubs | 26.x | No real Firebase backend |
+| `@react-native-google-signin/google-signin` / `@stripe/stripe-react-native` | stub APIs | pinned | |
 | `react-native-paper` | no shim | 5.15.3 | |
 | `i18next` / `react-i18next` | no shim | current | Pure JS |
 | `zustand` / `@tanstack/react-query` / RTK / `react-hook-form` | no shim | current | Pure JS |
@@ -162,20 +183,24 @@ Proven in [`test/real-world-expo/`](test/real-world-expo/). Requires `expo-modul
 | `expo-image` / `expo-linear-gradient` / `expo-blur` / `@expo/vector-icons` / `expo-font` | host / Text shims | |
 | `expo-camera` / `expo-location` / `expo-notifications` / `expo-image-picker` / `expo-sensors` / `expo-haptics` | granted permissions + deterministic models | |
 | `expo-av` / `expo-audio` / `expo-splash-screen` / `expo-status-bar` / `expo-updates` / `expo-linking` | behavioral stubs | |
+| `expo-web-browser` / `expo-auth-session` | stub / redirect helpers | |
 | `expo-router` | real package + `testing-library` `renderRouter` | In-memory routes; file-based `app/` not required |
 
 ```bash
-bun test                       # all suites incl. real-world + expo (spawned) — fail-fast
-bun run check                  # format + lint + typecheck + test + canaries
+bun check                      # canonical release gate (fixtures → matrix → oracle → tests → walks → canaries)
+bun run check:quick            # format + lint + typecheck + bun test (dev feedback only)
+bun run check:full             # install + commitlint helper + bun check
+bun test                       # contract/property/unit/meta + integration spawns — fail-fast
 bun run test:real-world
 bun run test:real-world-expo
-bun run test:canaries          # deliberate sabotages must fail probes
+bun run test:canaries          # deliberate sabotages must fail probes (temp copies under gate)
 bun run test:walk              # fc.commands soak (root + sandbox)
+bun run compat:matrix
+bun run compat:oracle
 bun run test:soak
-RN_BUN_SKIP_REAL_WORLD=1 bun test
 ```
 
-Property / model-based tests use `fast-check` (`fc.commands` / `asyncModelRun` for stateful walks). Tune with `RN_BUN_FC_RUNS` / `RN_BUN_FC_SEED`.
+Property / model-based tests use `fast-check` (`fc.commands` / `asyncModelRun` for stateful walks). Tune with `RN_BUN_FC_RUNS` / `RN_BUN_FC_SEED` / `RN_BUN_FC_PATH`.
 
 ## Architecture
 

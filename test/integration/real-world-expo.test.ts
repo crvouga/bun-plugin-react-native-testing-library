@@ -1,6 +1,6 @@
 /**
  * Integration: spawn `bun test` inside test/real-world-expo consumer sandbox.
- * Skip with RN_BUN_SKIP_REAL_WORLD=1.
+ * Under RN_BUN_RELEASE_GATE=1, skips are forbidden.
  */
 
 import { describe, expect, test } from "bun:test";
@@ -13,25 +13,11 @@ const SANDBOX = path.join(ROOT, "test", "real-world-expo");
 describe("integration: real-world-expo sandbox", () => {
   test("bun test in test/real-world-expo passes", async () => {
     if (process.env.RN_BUN_SKIP_REAL_WORLD === "1") {
-      console.log("RN_BUN_SKIP_REAL_WORLD=1 — skipping");
-      return;
+      expect.unreachable("RN_BUN_SKIP_REAL_WORLD=1 is forbidden — fixtures must run");
     }
 
     expect(existsSync(path.join(SANDBOX, "package.json"))).toBe(true);
-
-    if (!existsSync(path.join(SANDBOX, "node_modules"))) {
-      const install = Bun.spawn({
-        cmd: [process.execPath, "install"],
-        cwd: SANDBOX,
-        stdout: "pipe",
-        stderr: "pipe",
-        env: { ...process.env, FORCE_COLOR: "0" },
-      });
-      const code = await install.exited;
-      const err = await new Response(install.stderr).text();
-      if (code !== 0) console.error(err);
-      expect(code).toBe(0);
-    }
+    expect(existsSync(path.join(SANDBOX, "node_modules"))).toBe(true);
 
     const proc = Bun.spawn({
       cmd: [process.execPath, "test", "--bail"],

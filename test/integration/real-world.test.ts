@@ -1,6 +1,6 @@
 /**
  * Integration: spawn `bun test` inside test/real-world consumer sandbox.
- * Skip with RN_BUN_SKIP_REAL_WORLD=1.
+ * Under RN_BUN_RELEASE_GATE=1, skips are forbidden.
  */
 
 import { describe, expect, test } from "bun:test";
@@ -9,29 +9,19 @@ import path from "node:path";
 
 const ROOT = path.resolve(import.meta.dir, "../..");
 const SANDBOX = path.join(ROOT, "test", "real-world");
+const GATE = process.env.RN_BUN_RELEASE_GATE === "1";
 
 describe("integration: real-world sandbox", () => {
   test("bun test in test/real-world passes", async () => {
+    if (!GATE && process.env.RN_BUN_SKIP_REAL_WORLD === "1") {
+      expect.unreachable("RN_BUN_SKIP_REAL_WORLD is not allowed under release gate; unset it");
+    }
     if (process.env.RN_BUN_SKIP_REAL_WORLD === "1") {
-      console.log("RN_BUN_SKIP_REAL_WORLD=1 — skipping");
-      return;
+      expect.unreachable("RN_BUN_SKIP_REAL_WORLD=1 is forbidden — fixtures must run");
     }
 
     expect(existsSync(path.join(SANDBOX, "package.json"))).toBe(true);
-
-    if (!existsSync(path.join(SANDBOX, "node_modules"))) {
-      const install = Bun.spawn({
-        cmd: [process.execPath, "install"],
-        cwd: SANDBOX,
-        stdout: "pipe",
-        stderr: "pipe",
-        env: { ...process.env, FORCE_COLOR: "0" },
-      });
-      const code = await install.exited;
-      const err = await new Response(install.stderr).text();
-      expect(code).toBe(0);
-      if (code !== 0) console.error(err);
-    }
+    expect(existsSync(path.join(SANDBOX, "node_modules"))).toBe(true);
 
     const proc = Bun.spawn({
       cmd: [process.execPath, "test", "--bail"],

@@ -86,4 +86,20 @@ export const CANARIES: Canary[] = [
     replace: '"react-native/Libraries/StyleSheet/processColor": () => ({}),',
     probe: ["test/meta/canaries/probes/deep-path-process-color.test.ts"],
   },
+  {
+    id: "keychain-get-false",
+    description: "Keychain getGenericPassword always returns false",
+    file: "src/libraries/ecosystem.ts",
+    find: 'getGenericPassword: async (opts?: { service?: string }) => {\n        const c = keychainStore.get(serviceKey(opts));\n        return c ? { ...c, storage: "bun" } : false;\n      },',
+    replace: "getGenericPassword: async (_opts?: { service?: string }) => {\n        return false;\n      },",
+    probe: ["test/meta/canaries/probes/keychain-roundtrip.test.ts"],
+  },
+  {
+    id: "mmkv-getstring-undefined",
+    description: "MMKV Map fallback getString always returns undefined",
+    file: "src/libraries/skia-mmkv.ts",
+    find: 'getString: (k: string) => {\n          const v = map.get(k);\n          return typeof v === "string" ? v : undefined;\n        },',
+    replace: "getString: (_k: string) => {\n          return undefined;\n        },",
+    probe: ["test/meta/canaries/probes/mmkv-roundtrip.test.ts"],
+  },
 ];

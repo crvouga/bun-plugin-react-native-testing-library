@@ -1,0 +1,110 @@
+/**
+ * Jest-side differential oracle driver (official RN Jest preset).
+ */
+import { useState } from "react";
+import { Pressable, Text, TextInput, View } from "react-native";
+import { act, fireEvent, render } from "@testing-library/react-native";
+import * as fs from "node:fs";
+import * as path from "node:path";
+
+type TraceOp =
+  | { op: "render" }
+  | { op: "queryByTestId"; id: string; found: boolean }
+  | { op: "queryByText"; text: string; found: boolean }
+  | { op: "queryByRole"; role: string; found: boolean }
+  | { op: "getByLabelText"; label: string; found: boolean }
+  | { op: "press"; id: string }
+  | { op: "changeText"; id: string; value: string }
+  | { op: "rerender"; label: string }
+  | { op: "unmount" }
+  | { op: "assert"; key: string; value: string | number | boolean | null };
+
+const ORACLE_SEQUENCE = [
+  "render",
+  "query-root",
+  "query-button-role",
+  "query-label",
+  "type",
+  "press",
+  "press",
+  "rerender",
+  "query-text",
+  "unmount",
+] as const;
+
+function OracleApp({ label }: { label: string }) {
+  const [text, setText] = useState("");
+  const [presses, setPresses] = useState(0);
+  return (
+    <View testID="root" accessibilityLabel="root-view">
+      <Text testID="title">{label}</Text>
+      <TextInput testID="input" accessibilityLabel="name-input" value={text} onChangeText={setText} />
+      <Pressable
+        testID="btn"
+        accessibilityRole="button"
+        accessibilityLabel="increment"
+        onPress={() => setPresses((p) => p + 1)}
+      >
+        <Text testID="count">{presses}</Text>
+      </Pressable>
+      <Text testID="echo">{text}</Text>
+    </View>
+  );
+}
+
+test("emit deterministic operation trace", async () => {
+  const ops: TraceOp[] = [];
+  let presses = 0;
+  let text = "";
+  let label = "v1";
+
+  const screen = render(<OracleApp label={label} />);
+  ops.push({ op: "render" });
+
+  for (const step of ORACLE_SEQUENCE) {
+    if (step === "render") continue;
+    if (step === "query-root") {
+      const found = screen.queryByTestId("root") != null;
+      ops.push({ op: "queryByTestId", id: "root", found });
+      expect(found).toBe(true);
+    } else if (step === "query-button-role") {
+      const found = screen.queryByRole("button") != null;
+      ops.push({ op: "queryByRole", role: "button", found });
+      expect(found).toBe(true);
+    } else if (step === "query-label") {
+      const found = screen.queryByLabelText("increment") != null;
+      ops.push({ op: "getByLabelText", label: "increment", found });
+      expect(found).toBe(true);
+    } else if (step === "type") {
+      text = "hello";
+      await act(async () => {
+        fireEvent.changeText(screen.getByTestId("input"), text);
+      });
+      ops.push({ op: "changeText", id: "input", value: text });
+    } else if (step === "press") {
+      presses += 1;
+      await act(async () => {
+        fireEvent.press(screen.getByTestId("btn"));
+      });
+      ops.push({ op: "press", id: "btn" });
+      ops.push({ op: "assert", key: "count", value: String(presses) });
+      expect(screen.getByTestId("count")).toHaveTextContent(String(presses));
+    } else if (step === "rerender") {
+      label = "v2";
+      screen.rerender(<OracleApp label={label} />);
+      ops.push({ op: "rerender", label });
+      ops.push({ op: "queryByText", text: "v2", found: screen.queryByText("v2") != null });
+    } else if (step === "query-text") {
+      const found = screen.queryByText("hello") != null;
+      ops.push({ op: "queryByText", text: "hello", found });
+    } else if (step === "unmount") {
+      screen.unmount();
+      ops.push({ op: "unmount" });
+    }
+  }
+
+  const out = process.env.RN_BUN_ORACLE_OUT;
+  if (!out) throw new Error("RN_BUN_ORACLE_OUT is required");
+  fs.mkdirSync(path.dirname(out), { recursive: true });
+  fs.writeFileSync(out, `${JSON.stringify({ ops, presses, text, label })}\n`);
+});

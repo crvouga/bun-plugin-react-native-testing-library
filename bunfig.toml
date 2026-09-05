@@ -1,6 +1,11 @@
 [test]
 preload = ["./src/preload.ts"]
-# Consumer sandboxes have their own package.json / bunfig; run via integration spawn.
-pathIgnorePatterns = ["test/real-world/**", "test/real-world-expo/**"]
+# Consumer sandboxes + Jest-only oracle fixture are spawned by dedicated stages.
+pathIgnorePatterns = [
+  "test/real-world/**",
+  "test/real-world-expo/**",
+  "test/oracle/jest-fixture/**",
+  "test/oracle/bun-traces.test.tsx",
+]
 
 # Coverage: `bun test --coverage` (see package.json).

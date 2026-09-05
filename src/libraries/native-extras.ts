@@ -49,6 +49,10 @@ export const netinfoShim: LibraryShim = {
       fetch: async () => ({ ...netInfoState }),
       refresh: async () => ({ ...netInfoState }),
       configure: () => {},
+      /** Test-only: update connectivity model and notify listeners. */
+      setStateForTests: (partial: Partial<typeof netInfoState>) => {
+        __setNetInfoStateForTests(partial);
+      },
       addEventListener: (listener: (s: typeof netInfoState) => void) => {
         netInfoListeners.add(listener);
         return () => {

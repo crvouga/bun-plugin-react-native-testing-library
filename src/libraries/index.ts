@@ -14,7 +14,15 @@ import { reanimatedShim, workletsShim } from "./reanimated.ts";
 import { skiaShim, mmkvShim } from "./skia-mmkv.ts";
 import { asyncStorageShim, deviceInfoShim } from "./storage.ts";
 import { linearGradientShim, svgShim, webviewShim } from "./extras.ts";
-import { expoCoreShim, expoUiShim, expoSystemShim, expoHardwareShim, expoDataShim } from "./expo/index.ts";
+import {
+  expoCoreShim,
+  expoUiShim,
+  expoSystemShim,
+  expoHardwareShim,
+  expoDataShim,
+  expoWebBrowserShim,
+  expoAuthSessionShim,
+} from "./expo/index.ts";
 import {
   netinfoShim,
   clipboardShim,
@@ -33,6 +41,25 @@ import {
   motiShim,
   bottomSheetShim,
 } from "./native-extras.ts";
+import {
+  mapsShim,
+  videoShim,
+  imagePickerShim,
+  shareShim,
+  bootsplashShim,
+  keychainShim,
+  biometricsShim,
+  configShim,
+  visionCameraShim,
+  firebaseAppShim,
+  firebaseAuthShim,
+  firebaseFirestoreShim,
+  firebaseMessagingShim,
+  firebaseAnalyticsShim,
+  firebaseCrashlyticsShim,
+  googleSigninShim,
+  stripeShim,
+} from "./ecosystem.ts";
 
 export const LIBRARY_REGISTRY: readonly LibraryShim[] = [
   workletsShim,
@@ -63,11 +90,30 @@ export const LIBRARY_REGISTRY: readonly LibraryShim[] = [
   keyboardControllerShim,
   motiShim,
   bottomSheetShim,
+  mapsShim,
+  videoShim,
+  imagePickerShim,
+  shareShim,
+  bootsplashShim,
+  keychainShim,
+  biometricsShim,
+  configShim,
+  visionCameraShim,
+  firebaseAppShim,
+  firebaseAuthShim,
+  firebaseFirestoreShim,
+  firebaseMessagingShim,
+  firebaseAnalyticsShim,
+  firebaseCrashlyticsShim,
+  googleSigninShim,
+  stripeShim,
   expoCoreShim,
   expoUiShim,
   expoSystemShim,
   expoHardwareShim,
   expoDataShim,
+  expoWebBrowserShim,
+  expoAuthSessionShim,
 ];
 
 export type RegisterLibraryMocksResult = {

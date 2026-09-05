@@ -74,8 +74,36 @@ if (failed) {
   process.exit(1);
 }
 
+if (process.env.RN_BUN_RELEASE_GATE === "1" || process.env.GITHUB_ACTIONS === "true") {
+  const reportPath = join(root, "compat", "release-report.json");
+  if (!existsSync(reportPath)) {
+    error("Missing compat/release-report.json from bun check", [
+      "Release requires the canonical bun check report.",
+      "Run: bun check",
+    ]);
+  } else {
+    const report = JSON.parse(await Bun.file(reportPath).text()) as {
+      ok?: boolean;
+      sentinel?: string | null;
+    };
+    if (!report.ok || report.sentinel !== "RELEASE READY: bun check passed") {
+      error("compat/release-report.json is not RELEASE READY", [
+        "Re-run bun check until it prints RELEASE READY: bun check passed",
+      ]);
+    }
+  }
+}
+
+if (failed) {
+  console.error("release-preflight FAILED — refusing to run semantic-release.");
+  process.exit(1);
+}
+
 console.log("release-preflight: OK");
 console.log("  - package sources present");
+if (existsSync(join(root, "compat", "release-report.json"))) {
+  console.log("  - bun check release report present");
+}
 if (oidcReady) {
   console.log("  - OIDC token endpoint available (Trusted Publishing)");
   if (npmToken) {

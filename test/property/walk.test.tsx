@@ -7,10 +7,11 @@ import { useState } from "react";
 import { FlatList, Pressable, Switch, Text, TextInput, View } from "react-native";
 import { act, fireEvent, render } from "@testing-library/react-native";
 import * as fc from "fast-check";
+import type { ReactElement } from "react";
 import { fcRuns } from "../fc-opts.ts";
 import type { MonkeyModel, ScreenHandle } from "./commands/types.ts";
 
-type Real = { screen: ScreenHandle };
+type Real = { screen: ScreenHandle; ui: ReactElement };
 
 function App() {
   const [text, setText] = useState("");
@@ -23,6 +24,7 @@ function App() {
     <View testID="app">
       <TextInput testID="input" value={text} onChangeText={setText} />
       <Switch testID="sw" value={on} onValueChange={setOn} />
+      <Text testID="sw-flag">{on ? "1" : "0"}</Text>
       <Switch testID="dis" value={disabled} onValueChange={setDisabled} />
       <Pressable
         testID="add"
@@ -88,8 +90,33 @@ class ToggleCmd implements fc.AsyncCommand<MonkeyModel, Real> {
     await act(async () => {
       fireEvent(r.screen.getByTestId("sw"), "valueChange", m.on);
     });
+    expect(r.screen.getByTestId("sw-flag")).toHaveTextContent(m.on ? "1" : "0");
   }
   toString = () => "toggle";
+}
+
+class RerenderCmd implements fc.AsyncCommand<MonkeyModel, Real> {
+  check = (m: Readonly<MonkeyModel>) => m.mounted;
+  async run(m: MonkeyModel, r: Real): Promise<void> {
+    await act(async () => {
+      await r.screen.rerender(r.ui);
+    });
+    expect(r.screen.queryByTestId("app")).toBeTruthy();
+    expect(r.screen.getByTestId("sw-flag")).toHaveTextContent(m.on ? "1" : "0");
+    expect(r.screen.getByTestId("press-count")).toHaveTextContent(String(m.presses));
+    expect(r.screen.getByTestId("input")).toHaveDisplayValue(m.text);
+  }
+  toString = () => "rerender";
+}
+
+class UnmountCmd implements fc.AsyncCommand<MonkeyModel, Real> {
+  check = (m: Readonly<MonkeyModel>) => m.mounted;
+  async run(m: MonkeyModel, r: Real): Promise<void> {
+    m.mounted = false;
+    await r.screen.unmount();
+    expect(r.screen.queryByTestId("app")).toBeNull();
+  }
+  toString = () => "unmount";
 }
 
 class SetDisabledCmd implements fc.AsyncCommand<MonkeyModel, Real> {
@@ -173,6 +200,7 @@ class AssertCmd implements fc.AsyncCommand<MonkeyModel, Real> {
     expect(r.screen.queryByTestId("app")).toBeTruthy();
     expect(r.screen.getByTestId("press-count")).toHaveTextContent(String(m.presses));
     expect(r.screen.getByTestId("input")).toHaveDisplayValue(m.text);
+    expect(r.screen.getByTestId("sw-flag")).toHaveTextContent(m.on ? "1" : "0");
   }
   toString = () => "assert";
 }
@@ -186,13 +214,20 @@ const cmds = [
   fc.constant(new DisabledPressCmd()),
   fc.nat({ max: 8 }).map((i) => new RemoveCmd(i)),
   fc.constant(new AssertCmd()),
+  fc.constant(new RerenderCmd()),
+  // Unmount is last-only: include sparsely so sequences can still exercise other cmds
+  fc.constant(new UnmountCmd()),
 ];
+
+const COMMAND_COVERAGE = new Set<string>();
 
 describe("property: fc.commands monkey walk", () => {
   test("random command sequences keep screen == model", async () => {
     await fc.assert(
       fc.asyncProperty(fc.commands(cmds, { maxCommands: 24, size: "+1" }), async (commands) => {
-        const screen = await render(<App />);
+        for (const c of commands) COMMAND_COVERAGE.add(String(c));
+        const ui = <App />;
+        const screen = await render(ui);
         await fc.asyncModelRun(
           () => ({
             model: {
@@ -203,13 +238,25 @@ describe("property: fc.commands monkey walk", () => {
               disabled: false,
               mounted: true,
             } satisfies MonkeyModel,
-            real: { screen: screen as ScreenHandle },
+            real: { screen: screen as ScreenHandle, ui },
           }),
           commands,
         );
-        await screen.unmount();
+        // Only unmount if still mounted
+        try {
+          await screen.unmount();
+        } catch {
+          // already unmounted by UnmountCmd
+        }
       }),
-      fcRuns(30),
+      fcRuns(Number(process.env.RN_BUN_FC_RUNS ?? "30")),
     );
-  }, 120_000);
+
+    // Every command family must appear at least once across the run budget.
+    const families = ["type(", "toggle", "setDisabled(", "add", "press", "disabledPress", "remove(", "assert"];
+    for (const fam of families) {
+      const hit = [...COMMAND_COVERAGE].some((s) => s.startsWith(fam) || s === fam);
+      expect(hit).toBe(true);
+    }
+  }, 180_000);
 });

@@ -1,0 +1,53 @@
+{
+  "ok": false,
+  "startedAt": "2026-09-05T01:19:37.691Z",
+  "finishedAt": "2026-09-05T01:32:06.274Z",
+  "bun": "1.4.1",
+  "platform": "darwin",
+  "arch": "arm64",
+  "stages": [
+    {
+      "id": "bootstrap-fixtures",
+      "label": "Bootstrap fixtures (frozen sandbox installs)",
+      "ok": true,
+      "seconds": 632.326110834,
+      "exitCode": 0
+    },
+    {
+      "id": "format",
+      "label": "Format check",
+      "ok": true,
+      "seconds": 0.19331058299995493,
+      "exitCode": 0
+    },
+    {
+      "id": "lint",
+      "label": "Lint",
+      "ok": true,
+      "seconds": 0.14183708399999886,
+      "exitCode": 0
+    },
+    {
+      "id": "typecheck",
+      "label": "Typecheck",
+      "ok": true,
+      "seconds": 1.1944960839999839,
+      "exitCode": 0
+    },
+    {
+      "id": "verify-package",
+      "label": "Verify package / tarball",
+      "ok": true,
+      "seconds": 90.40283287500009,
+      "exitCode": 0
+    },
+    {
+      "id": "compat-matrix",
+      "label": "npm-pack clean-consumer matrix",
+      "ok": false,
+      "seconds": 24.331058583999983,
+      "exitCode": 1
+    }
+  ],
+  "sentinel": null
+}

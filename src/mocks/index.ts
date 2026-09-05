@@ -347,6 +347,32 @@ export const DEEP_PATHS: Record<string, (api: ReactNativePublicAPI) => unknown> 
     processColor: (c: unknown) => c,
     __esModule: true,
   }),
+  "react-native/Libraries/Image/resolveAssetSource": () => {
+    const resolveAssetSource = (s: unknown) => s;
+    return { default: resolveAssetSource, resolveAssetSource, __esModule: true };
+  },
+  "react-native/Libraries/Utilities/binaryToBase64": () => {
+    const toB64 = (data: ArrayBuffer | Uint8Array | string) => {
+      if (typeof data === "string") return Buffer.from(data).toString("base64");
+      const bytes = data instanceof ArrayBuffer ? new Uint8Array(data) : data;
+      return Buffer.from(bytes).toString("base64");
+    };
+    return { default: toB64, binaryToBase64: toB64, __esModule: true };
+  },
+  "react-native/Libraries/Components/TextInput/TextInputState": () => ({
+    currentlyFocusedInput: () => null,
+    currentlyFocusedField: () => null,
+    focusTextInput: () => {},
+    blurTextInput: () => {},
+    registerInput: () => {},
+    unregisterInput: () => {},
+    isTextInput: () => false,
+    __esModule: true,
+  }),
+  "react-native/Libraries/Core/Devtools/getDevServer": () => {
+    const getDevServer = () => ({ url: "http://localhost:8081/", fullBundleUrl: null, bundleLoadedFromServer: false });
+    return { default: getDevServer, getDevServer, __esModule: true };
+  },
 };
 
 /** Specifiers that are valid to import without a DEEP_PATHS factory. */
