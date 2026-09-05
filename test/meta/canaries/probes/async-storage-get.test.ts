@@ -7,8 +7,8 @@
 import { describe, expect, test } from "bun:test";
 import { mkdirSync, writeFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
-import { asyncStorageShim } from "../../../src/libraries/storage.ts";
-import { resolveConfig } from "../../../src/config.ts";
+import { asyncStorageShim } from "../../../../src/libraries/storage.ts";
+import { resolveConfig } from "../../../../src/config.ts";
 
 describe("canary probe: async-storage getItem", () => {
   test("Map fallback round-trips setItem/getItem", async () => {

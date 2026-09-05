@@ -9,15 +9,16 @@ import { CANARIES } from "../test/meta/canaries/defs.ts";
 
 const ROOT = join(import.meta.dir, "..");
 
-async function runProbe(probe: string[]): Promise<number> {
+async function runProbe(probe: string[]): Promise<{ code: number; out: string }> {
   const proc = Bun.spawn(["bun", "test", "--bail", ...probe], {
     cwd: ROOT,
     stdout: "pipe",
     stderr: "pipe",
     env: { ...process.env, HUSKY: "0" },
   });
+  const [stdout, stderr] = await Promise.all([new Response(proc.stdout).text(), new Response(proc.stderr).text()]);
   await proc.exited;
-  return proc.exitCode ?? 1;
+  return { code: proc.exitCode ?? 1, out: `${stdout}\n${stderr}` };
 }
 
 function apply(file: string, find: string, replace: string): string {
@@ -47,8 +48,13 @@ async function main(): Promise<void> {
     let original: string | null = null;
     try {
       original = apply(canary.file, canary.find, canary.replace);
-      const code = await runProbe(canary.probe);
-      if (code === 0) {
+      const { code, out } = await runProbe(canary.probe);
+      const ranTests = /\d+ (pass|fail)/.test(out) && !/did not match any test files/.test(out);
+      if (!ranTests) {
+        survivors.push(canary.id);
+        console.log("ERROR probe did not run any tests");
+        console.error(out.slice(-1500));
+      } else if (code === 0) {
         survivors.push(canary.id);
         console.log("SURVIVED (suite stayed green — proof hole)");
       } else {

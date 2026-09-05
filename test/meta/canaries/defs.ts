@@ -53,4 +53,37 @@ export const CANARIES: Canary[] = [
     replace: "getItem: async (_k: string) => null,",
     probe: ["test/meta/canaries/probes/async-storage-get.test.ts"],
   },
+  {
+    id: "netinfo-always-offline",
+    description: "NetInfo initial state reports isConnected: false",
+    file: "src/libraries/native-extras.ts",
+    find: "isConnected: true,",
+    replace: "isConnected: false,",
+    probe: ["test/meta/canaries/probes/netinfo-connected.test.ts"],
+  },
+  {
+    id: "clipboard-get-empty",
+    description: "Clipboard getString always returns empty string",
+    file: "src/libraries/native-extras.ts",
+    find: "getString: async () => clipboardValue,",
+    replace: 'getString: async () => "",',
+    probe: ["test/meta/canaries/probes/clipboard-roundtrip.test.ts"],
+  },
+  {
+    id: "flashlist-drops-last",
+    description: "FlashList omits the last row",
+    file: "src/libraries/native-extras.ts",
+    find: "!data || data.length === 0\n          ? [renderComp(ListEmptyComponent)]\n          : data.flatMap((item, index) => {",
+    replace:
+      "!data || data.length === 0\n          ? [renderComp(ListEmptyComponent)]\n          : data.slice(0, -1).flatMap((item, index) => {",
+    probe: ["test/meta/canaries/probes/flashlist-count.test.tsx"],
+  },
+  {
+    id: "deep-path-process-color-empty",
+    description: "DEEP_PATHS processColor factory returns empty module",
+    file: "src/mocks/index.ts",
+    find: '"react-native/Libraries/StyleSheet/processColor": () => ({\n    default: (c: unknown) => c,\n    processColor: (c: unknown) => c,\n    __esModule: true,\n  }),',
+    replace: '"react-native/Libraries/StyleSheet/processColor": () => ({}),',
+    probe: ["test/meta/canaries/probes/deep-path-process-color.test.ts"],
+  },
 ];

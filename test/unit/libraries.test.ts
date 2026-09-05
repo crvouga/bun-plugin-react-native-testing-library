@@ -57,6 +57,9 @@ describe("libraries coverage", () => {
         "react-native-device-info",
         "react-native-linear-gradient",
         "react-native-webview",
+        "@react-native-community/netinfo",
+        "@react-native-clipboard/clipboard",
+        "@shopify/flash-list",
       ];
       for (const p of pkgs) {
         try {

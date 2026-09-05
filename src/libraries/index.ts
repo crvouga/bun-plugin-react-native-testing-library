@@ -15,6 +15,24 @@ import { skiaShim, mmkvShim } from "./skia-mmkv.ts";
 import { asyncStorageShim, deviceInfoShim } from "./storage.ts";
 import { linearGradientShim, svgShim, webviewShim } from "./extras.ts";
 import { expoCoreShim, expoUiShim, expoSystemShim, expoHardwareShim, expoDataShim } from "./expo/index.ts";
+import {
+  netinfoShim,
+  clipboardShim,
+  datetimepickerShim,
+  sliderShim,
+  pickerShim,
+  flashListShim,
+  pagerViewShim,
+  lottieShim,
+  fastImageShim,
+  permissionsShim,
+  localizeShim,
+  getRandomValuesShim,
+  maskedViewShim,
+  keyboardControllerShim,
+  motiShim,
+  bottomSheetShim,
+} from "./native-extras.ts";
 
 export const LIBRARY_REGISTRY: readonly LibraryShim[] = [
   workletsShim,
@@ -29,6 +47,22 @@ export const LIBRARY_REGISTRY: readonly LibraryShim[] = [
   linearGradientShim,
   webviewShim,
   svgShim,
+  netinfoShim,
+  clipboardShim,
+  datetimepickerShim,
+  sliderShim,
+  pickerShim,
+  flashListShim,
+  pagerViewShim,
+  lottieShim,
+  fastImageShim,
+  permissionsShim,
+  localizeShim,
+  getRandomValuesShim,
+  maskedViewShim,
+  keyboardControllerShim,
+  motiShim,
+  bottomSheetShim,
   expoCoreShim,
   expoUiShim,
   expoSystemShim,

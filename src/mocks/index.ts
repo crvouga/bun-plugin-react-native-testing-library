@@ -316,6 +316,37 @@ export const DEEP_PATHS: Record<string, (api: ReactNativePublicAPI) => unknown> 
     default: api.requireNativeComponent,
     __esModule: true,
   }),
+
+  // Flow type modules — popular libraries import these; provide empty shapes.
+  "react-native/Libraries/Types/CodegenTypes": () => ({
+    WithDefault: undefined,
+    Float: undefined,
+    Double: undefined,
+    Int32: undefined,
+    UnsafeObject: undefined,
+    BubblingEventHandler: undefined,
+    DirectEventHandler: undefined,
+    __esModule: true,
+  }),
+  "react-native/Libraries/TurboModule/RCTExport": () => ({
+    TurboModule: undefined,
+    RootTag: undefined,
+    __esModule: true,
+  }),
+  "react-native/Libraries/Types/CoreEventTypes": () => ({
+    __esModule: true,
+  }),
+  "react-native/Libraries/Image/ImageSource": () => ({
+    __esModule: true,
+  }),
+  "react-native/Libraries/Renderer/shims/ReactNativeTypes": () => ({
+    __esModule: true,
+  }),
+  "react-native/Libraries/StyleSheet/processColor": () => ({
+    default: (c: unknown) => c,
+    processColor: (c: unknown) => c,
+    __esModule: true,
+  }),
 };
 
 /** Specifiers that are valid to import without a DEEP_PATHS factory. */

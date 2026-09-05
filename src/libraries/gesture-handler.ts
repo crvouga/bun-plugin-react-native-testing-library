@@ -3,7 +3,7 @@ import { mockBoth, tryRequire, loadConsumerReact } from "./helpers.ts";
 
 /**
  * Translate gesture-handler's jestSetup.js into mock.module calls against
- * the shipped `lib/module/mocks/*` modules.
+ * the shipped `lib/module/mocks/*` modules, plus a View-based root fallback.
  */
 export const gestureHandlerShim: LibraryShim = {
   name: "gesture-handler",
@@ -51,44 +51,39 @@ export const gestureHandlerShim: LibraryShim = {
       );
     }
 
-    // Ensure root package loads (uses mocked internals)
-    // If native module still blows up, provide a View-based fallback.
-    try {
-      Bun.resolveSync("react-native-gesture-handler", cwd);
-    } catch {
-      const React = loadConsumerReact();
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const RN = require("react-native") as typeof import("react-native");
-      mockBoth(
-        "react-native-gesture-handler",
-        () => ({
-          GestureHandlerRootView: RN.View,
-          GestureDetector: ({ children }: { children?: unknown }) => children ?? null,
-          Gesture: {
-            Tap: () => ({ onEnd: () => ({}) }),
-            Pan: () => ({ onEnd: () => ({}) }),
-            LongPress: () => ({ onEnd: () => ({}) }),
-          },
-          State: { UNDETERMINED: 0, FAILED: 1, BEGAN: 2, CANCELLED: 3, ACTIVE: 4, END: 5 },
-          Directions: { RIGHT: 1, LEFT: 2, UP: 4, DOWN: 8 },
-          TapGestureHandler: RN.View,
-          PanGestureHandler: RN.View,
-          LongPressGestureHandler: RN.View,
-          NativeViewGestureHandler: RN.View,
-          ScrollView: RN.ScrollView,
-          FlatList: RN.FlatList,
-          TouchableOpacity: RN.TouchableOpacity,
-          TouchableHighlight: RN.TouchableHighlight,
-          TouchableWithoutFeedback: RN.TouchableWithoutFeedback,
-          TouchableNativeFeedback: RN.TouchableNativeFeedback,
-          Swipeable: RN.View,
-          DrawerLayout: RN.View,
-          createNativeWrapper: (c: unknown) => c,
-          // silence unused
-          __React: React,
-        }),
-        cwd,
-      );
-    }
+    // Always mock the package root — loading the real entry can throw when
+    // `__DEV__` / native modules are missing (and require-inside-factory recurses).
+    const React = loadConsumerReact();
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const RN = require("react-native") as typeof import("react-native");
+    void React;
+    mockBoth(
+      "react-native-gesture-handler",
+      () => ({
+        GestureHandlerRootView: RN.View,
+        GestureDetector: ({ children }: { children?: unknown }) => children ?? null,
+        Gesture: {
+          Tap: () => ({ onEnd: () => ({}) }),
+          Pan: () => ({ onEnd: () => ({}) }),
+          LongPress: () => ({ onEnd: () => ({}) }),
+        },
+        State: { UNDETERMINED: 0, FAILED: 1, BEGAN: 2, CANCELLED: 3, ACTIVE: 4, END: 5 },
+        Directions: { RIGHT: 1, LEFT: 2, UP: 4, DOWN: 8 },
+        TapGestureHandler: RN.View,
+        PanGestureHandler: RN.View,
+        LongPressGestureHandler: RN.View,
+        NativeViewGestureHandler: RN.View,
+        ScrollView: RN.ScrollView,
+        FlatList: RN.FlatList,
+        TouchableOpacity: RN.TouchableOpacity,
+        TouchableHighlight: RN.TouchableHighlight,
+        TouchableWithoutFeedback: RN.TouchableWithoutFeedback,
+        TouchableNativeFeedback: RN.TouchableNativeFeedback,
+        Swipeable: RN.View,
+        DrawerLayout: RN.View,
+        createNativeWrapper: (c: unknown) => c,
+      }),
+      cwd,
+    );
   },
 };

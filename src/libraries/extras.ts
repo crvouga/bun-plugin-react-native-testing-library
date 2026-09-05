@@ -47,12 +47,48 @@ export const webviewShim: LibraryShim = {
 };
 
 /**
- * Optional svg deep-path: ensure Touchable is visible (handled on public API).
+ * react-native-svg often loads once Touchable.Mixin exists, but under Bun it
+ * still hits Flow `typeof` on some deep paths. Always provide a host mock so
+ * imports are stable; real-world svg tests can still exercise the real tree
+ * when the package loads via consumer entry without going through this factory
+ * recursion path.
  */
 export const svgShim: LibraryShim = {
   name: "svg",
   packages: ["react-native-svg"],
-  register() {
-    // Real react-native-svg JS loads once Touchable.Mixin exists on the RN mock.
+  register({ cwd }) {
+    const React = loadConsumerReact();
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const RN = require("react-native") as typeof import("react-native");
+
+    const host = (name: string) => {
+      const C = ({ children, ...rest }: Record<string, unknown> & { children?: React.ReactNode }) =>
+        React.createElement(RN.View, rest, children);
+      C.displayName = name;
+      return C;
+    };
+
+    const Svg = host("Svg");
+    const api = {
+      default: Svg,
+      Svg,
+      Circle: host("Circle"),
+      Path: host("Path"),
+      Rect: host("Rect"),
+      G: host("G"),
+      Line: host("Line"),
+      Text: host("SvgText"),
+      Defs: host("Defs"),
+      ClipPath: host("ClipPath"),
+      LinearGradient: host("SvgLinearGradient"),
+      RadialGradient: host("SvgRadialGradient"),
+      Stop: host("Stop"),
+      Polygon: host("Polygon"),
+      Polyline: host("Polyline"),
+      Ellipse: host("Ellipse"),
+      TSpan: host("TSpan"),
+      __esModule: true,
+    };
+    mockBoth("react-native-svg", () => api, cwd);
   },
 };

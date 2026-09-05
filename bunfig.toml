@@ -1,7 +1,6 @@
 [test]
 preload = ["./src/preload.ts"]
 # Consumer sandboxes have their own package.json / bunfig; run via integration spawn.
-# Canary probes are spawned by scripts/run-canaries.ts, not the main suite.
-pathIgnorePatterns = ["test/real-world/**", "test/real-world-expo/**", "test/meta/canaries/probes/**"]
+pathIgnorePatterns = ["test/real-world/**", "test/real-world-expo/**"]
 
 # Coverage: `bun test --coverage` (see package.json).

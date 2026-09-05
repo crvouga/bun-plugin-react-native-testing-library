@@ -1,6 +1,6 @@
 {
   "name": "bun-plugin-react-native-testing-library",
-  "version": "0.1.0",
+  "version": "0.0.0-development",
   "description": "Bun runtime plugin that makes @testing-library/react-native work under bun test with zero Jest and zero Metro",
   "license": "MIT",
   "type": "module",
@@ -15,21 +15,55 @@
   "files": [
     "src",
     "bunfig.example.toml",
-    "README.md"
+    "README.md",
+    "LICENSE"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/crvouga/bun-plugin-react-native-testing-library.git"
+  },
+  "homepage": "https://github.com/crvouga/bun-plugin-react-native-testing-library#readme",
+  "bugs": {
+    "url": "https://github.com/crvouga/bun-plugin-react-native-testing-library/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "keywords": [
+    "bun",
+    "bun-plugin",
+    "react-native",
+    "testing-library",
+    "rntl",
+    "bun-test"
   ],
   "scripts": {
+    "prepare": "husky",
     "test": "bun test --bail",
     "test:coverage": "bun test --bail --coverage",
     "test:real-world": "bun test --bail --cwd test/real-world",
     "test:real-world-expo": "bun test --bail --cwd test/real-world-expo",
     "test:canaries": "bun run scripts/run-canaries.ts",
     "test:soak": "RN_BUN_FC_RUNS=100 bun test --bail",
+    "test:walk": "RN_BUN_FC_RUNS=80 bun test --bail test/property/walk.test.tsx && RN_BUN_FC_RUNS=40 bun test --bail --cwd test/real-world walk.test.tsx commands-storage.test.ts navigation.test.tsx",
     "typecheck": "tsc --noEmit",
     "format": "biome format --write .",
     "format:check": "biome format .",
     "lint": "biome lint --error-on-warnings .",
     "lint:fix": "biome lint --write --error-on-warnings .",
-    "check": "bun run format:check && bun run lint && bun run typecheck && bun run test && bun run test:canaries"
+    "check": "bun run format:check && bun run lint && bun run typecheck && bun run test && bun run test:canaries",
+    "check:full": "bun run scripts/ci-local.ts",
+    "commitlint": "commitlint --edit",
+    "verify-package": "bun run scripts/verify-package.ts",
+    "release:preflight": "bun run scripts/release-preflight.ts",
+    "release": "semantic-release",
+    "release:dry-run": "semantic-release --dry-run",
+    "secrets:doctor": "bun run scripts/secrets/doctor.ts",
+    "secrets:check": "bun run scripts/secrets/check-vault.ts && bun run scripts/secrets/check-github.ts",
+    "secrets:sync": "bun run scripts/secrets/sync-github.ts",
+    "npm:seed": "bun run scripts/seed-npm.ts",
+    "gh": "open https://github.com/crvouga/bun-plugin-react-native-testing-library/actions"
   },
   "peerDependencies": {
     "@testing-library/react-native": ">=14.0.0",
@@ -43,13 +77,23 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.8",
+    "@commitlint/cli": "^21.2.2",
+    "@commitlint/config-conventional": "^21.2.2",
+    "@semantic-release/commit-analyzer": "^13.0.1",
+    "@semantic-release/github": "^12.0.9",
+    "@semantic-release/npm": "^13.1.5",
+    "@semantic-release/release-notes-generator": "^14.1.1",
     "@testing-library/react-native": "14.0.1",
     "@types/babel__core": "^7.20.5",
     "@types/bun": "latest",
     "@types/react": "^19.1.1",
+    "conventional-changelog-conventionalcommits": "^10.3.0",
     "fast-check": "4.9.0",
+    "husky": "^9.1.7",
+    "publint": "^0.3.23",
     "react": "19.2.8",
     "react-native": "0.87.1",
+    "semantic-release": "^25.0.9",
     "test-renderer": "1.2.0",
     "typescript": "^5.8.2"
   }

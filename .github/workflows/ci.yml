@@ -1,0 +1,176 @@
+# Local replica: bun run check:full (scripts/ci-local.ts)
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+permissions:
+  contents: read
+
+env:
+  HUSKY: "0"
+
+jobs:
+  commitlint:
+    name: Commitlint
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.4.0"
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      # Direct pushes to main cannot rewrite already-landed messages.
+      # Conventional Commits are enforced on pull requests (commits + title).
+      # On main, unmatched subjects still publish as a patch (see .releaserc.json).
+      - name: Note push commitlint policy
+        if: github.event_name == 'push'
+        run: |
+          set +e
+          bunx commitlint --last --verbose
+          status=$?
+          if [ "$status" -ne 0 ]; then
+            echo "::warning::HEAD is not Conventional Commits. Enforced on PRs. On main, semantic-release still publishes a patch unless a feat/fix/BREAKING message selects a higher bump."
+          fi
+
+      - name: Validate PR commits
+        if: github.event_name == 'pull_request'
+        run: |
+          set +e
+          bunx commitlint --from ${{ github.event.pull_request.base.sha }} --to ${{ github.event.pull_request.head.sha }} --verbose
+          status=$?
+          if [ "$status" -ne 0 ]; then
+            echo "::error::One or more PR commits failed Conventional Commits lint."
+            echo ""
+            echo "Expected format:"
+            echo "  <type>(optional-scope): <description>"
+            echo ""
+            echo "Releasable types: feat, fix (and BREAKING CHANGE / type!)"
+            echo "Fix by amending commits or squashing with a conventional PR title."
+            echo "See README.md → Releasing"
+            exit "$status"
+          fi
+
+      - name: Validate PR title
+        if: github.event_name == 'pull_request'
+        uses: amannn/action-semantic-pull-request@v6
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          subjectPattern: .+
+          subjectPatternError: |
+            The PR title "{title}" looks empty after the type/scope prefix.
+            Use a Conventional Commits title, e.g. "feat: add library shim".
+
+  quality:
+    name: Quality
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.4.0"
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Format check
+        run: bun run format:check
+
+      - name: Lint
+        run: bun run lint
+
+      - name: Typecheck
+        run: bun run typecheck
+
+      - name: Verify package
+        run: bun run verify-package
+
+  test:
+    name: Test
+    needs: [quality]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.4.0"
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Run tests
+        run: bun test --bail
+
+      - name: Canaries
+        run: bun run test:canaries
+
+  # Maintainer secrets: Trusted Publishing (OIDC) — docs/SECRETS.md — bun run secrets:doctor
+  # First publish: npm:seed --ci uses optional NPM_TOKEN if the package does not exist yet.
+  release:
+    name: Release
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [commitlint, test]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.4.0"
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: lts/*
+          registry-url: https://registry.npmjs.org
+
+      - name: Ensure npm supports Trusted Publishing
+        run: |
+          npm install -g npm@^11.5.1
+          npm --version
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Verify package
+        run: bun run verify-package
+
+      - name: Release preflight
+        run: bun run release:preflight
+
+      - name: Seed npm package if missing
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bun run npm:seed -- --ci
+
+      - name: Semantic Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: bunx semantic-release

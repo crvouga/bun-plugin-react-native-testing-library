@@ -7,24 +7,34 @@ import { resolveConfig, parseLibraryMocksEnv } from "../../src/config.ts";
 import { LIBRARY_REGISTRY, registerLibraryMocks } from "../../src/libraries/index.ts";
 
 describe("contract: library registry", () => {
-  test("registry has expected shim names", () => {
-    const names = LIBRARY_REGISTRY.map((s) => s.name).sort();
-    expect(names).toContain("reanimated");
-    expect(names).toContain("gesture-handler");
-    expect(names).toContain("safe-area");
-    expect(names).toContain("screens");
-    expect(names).toContain("async-storage");
-    expect(names).toContain("skia");
-    expect(names).toContain("mmkv");
-    expect(names).toContain("device-info");
-    expect(names).toContain("worklets");
-    expect(names).toContain("linear-gradient");
-    expect(names).toContain("webview");
-    expect(names).toContain("expo");
-    expect(names).toContain("expo-ui");
-    expect(names).toContain("expo-system");
-    expect(names).toContain("expo-hardware");
-    expect(names).toContain("expo-data");
+  test("registry has unique names and covers catalog shims", () => {
+    const names = LIBRARY_REGISTRY.map((s) => s.name);
+    expect(new Set(names).size).toBe(names.length);
+    // Core shims that must always exist
+    for (const required of [
+      "reanimated",
+      "gesture-handler",
+      "safe-area",
+      "screens",
+      "async-storage",
+      "skia",
+      "mmkv",
+      "device-info",
+      "worklets",
+      "linear-gradient",
+      "webview",
+      "netinfo",
+      "clipboard",
+      "flash-list",
+      "picker",
+      "expo",
+      "expo-ui",
+      "expo-system",
+      "expo-hardware",
+      "expo-data",
+    ]) {
+      expect(names).toContain(required);
+    }
   });
 
   test("libraryMocks: false skips all", () => {
