@@ -55,6 +55,7 @@ describe("expo ui + hardware property", () => {
   test("location + notifications + haptics models", async () => {
     await fc.assert(
       fc.asyncProperty(fc.integer({ min: 1, max: 5 }), async (n) => {
+        await Notifications.cancelAllScheduledNotificationsAsync();
         const perm = await Location.requestForegroundPermissionsAsync();
         expect(perm.granted).toBe(true);
         const pos = await Location.getCurrentPositionAsync();
@@ -67,7 +68,7 @@ describe("expo ui + hardware property", () => {
           });
         }
         const all = await Notifications.getAllScheduledNotificationsAsync();
-        expect(all.length).toBeGreaterThanOrEqual(n);
+        expect(all.length).toBe(n);
         await Notifications.cancelAllScheduledNotificationsAsync();
 
         await Haptics.selectionAsync();

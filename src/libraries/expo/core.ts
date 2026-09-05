@@ -244,12 +244,41 @@ export const expoCoreShim: LibraryShim = {
 
     mockBoth("expo-modules-core", factory, cwd);
 
-    // Optional expo package stubs that jest-expo also mocks
+    // Match babel-preset-expo / jest-expo: EXPO_OS drives native vs web branches.
+    if (!process.env.EXPO_OS) {
+      process.env.EXPO_OS = config.platform;
+    }
+
+    // Optional expo package stubs that jest-expo also mocks.
+    // preload sets `window=globalThis`, which makes expo's async-require `setup.ts`
+    // load HMR — under native EXPO_OS that calls `HMRClient.setup({isEnabled})` and throws.
     if (packageResolves("expo", cwd)) {
-      try {
-        mockBoth("expo/src/async-require/messageSocket", () => undefined, cwd);
-      } catch {
-        // ignore
+      const hmrStub = {
+        setup: bunFn(),
+        log: bunFn(),
+        enable: bunFn(),
+        disable: bunFn(),
+        registerBundle: bunFn(),
+        default: {
+          setup: bunFn(),
+          log: bunFn(),
+          enable: bunFn(),
+          disable: bunFn(),
+          registerBundle: bunFn(),
+        },
+      };
+      for (const id of [
+        "expo/src/async-require/messageSocket",
+        "expo/src/async-require/setupHMR",
+        "expo/src/async-require/setup",
+        "expo/src/async-require/hmr",
+        "expo/src/async-require/setupFastRefresh",
+      ]) {
+        try {
+          mockBoth(id, () => (id.endsWith("/hmr") ? hmrStub : {}), cwd);
+        } catch {
+          // ignore
+        }
       }
       try {
         mockBoth("expo/src/winter/FormData", () => ({ installFormDataPatch: bunFn() }), cwd);

@@ -10,3 +10,6 @@ dist/
 *.tsbuildinfo
 test/real-world/node_modules/
 test/real-world-expo/node_modules/
+test/real-world-expo/.rn-bun-cache/
+# Leftover from pre-fix bun:sqlite named ":memory:…" paths
+test/real-world-expo/:memory:*

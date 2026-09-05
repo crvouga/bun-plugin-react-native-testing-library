@@ -23,6 +23,31 @@ g.IS_REACT_ACT_ENVIRONMENT = true;
 g.IS_REACT_NATIVE_TEST_ENVIRONMENT = true;
 g.nativeFabricUIManager = g.nativeFabricUIManager ?? {};
 
+// RN normally installs this; Expo.fx and LogBox probe it.
+if (typeof g.ErrorUtils === "undefined") {
+  const defaultHandler = (error: unknown, _isFatal?: boolean) => {
+    console.error(error);
+  };
+  let handler = defaultHandler;
+  g.ErrorUtils = {
+    setGlobalHandler: (next: typeof defaultHandler) => {
+      handler = next;
+    },
+    getGlobalHandler: () => handler,
+    reportError: (error: unknown) => {
+      handler(error, false);
+    },
+    reportFatalError: (error: unknown) => {
+      handler(error, true);
+    },
+  };
+}
+
+// babel-preset-expo normally inlines this; set early for Expo packages under Bun.
+if (!process.env.EXPO_OS) {
+  process.env.EXPO_OS = process.env.RN_BUN_PLATFORM === "android" ? "android" : "ios";
+}
+
 if (typeof g.window === "undefined") {
   g.window = globalThis;
 }

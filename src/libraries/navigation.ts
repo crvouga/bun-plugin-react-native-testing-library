@@ -71,6 +71,22 @@ export const screensShim: LibraryShim = {
       return C;
     };
 
+    const featureFlags = {
+      experiment: {
+        synchronousScreenUpdatesEnabled: false,
+        synchronousHeaderConfigUpdatesEnabled: false,
+        synchronousHeaderSubviewUpdatesEnabled: false,
+        androidLegacyTopInsetBehavior: false,
+        androidResetScreenShadowStateOnOrientationChangeEnabled: false,
+        iosPreventReattachmentOfDismissedScreens: true,
+        iosPreventReattachmentOfDismissedModals: true,
+        ios26AllowInteractionsDuringTransition: true,
+      },
+      stable: {
+        debugLogging: false,
+      },
+    };
+
     const api = {
       enableScreens: () => {},
       enableFreeze: () => {},
@@ -86,6 +102,8 @@ export const screensShim: LibraryShim = {
       InnerScreen: Screen,
       ScreenContext: React.createContext(Screen),
       useTransitionProgress: () => ({ progress: { value: 0 }, closing: { value: 0 }, goingForward: { value: 0 } }),
+      featureFlags,
+      compatibilityFlags: {},
     };
 
     mockBoth("react-native-screens", () => api, cwd);

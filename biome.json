@@ -36,7 +36,9 @@
         "noForEach": "off",
         "noUselessSwitchCase": "off",
         "noBannedTypes": "off",
-        "noUselessConstructor": "off"
+        "noUselessConstructor": "off",
+        "useLiteralKeys": "error",
+        "noUselessTernary": "error"
       },
       "correctness": {
         "noUnusedFunctionParameters": "error",
@@ -46,7 +48,8 @@
         "noNonNullAssertion": "off",
         "noParameterAssign": "off",
         "useConst": "error",
-        "useImportType": "off"
+        "useImportType": "off",
+        "useTemplate": "error"
       },
       "suspicious": {
         "noExplicitAny": "off",

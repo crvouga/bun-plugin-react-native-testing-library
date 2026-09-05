@@ -51,7 +51,7 @@ function patchJest(existing: JestLike): void {
       const ms = typeof now === "number" ? now : now.getTime();
       // Best-effort: Bun may not support clock mocking; keep a no-op-safe stub.
       try {
-        const enableFakeTimers = existing["useFakeTimers"] as (() => void) | undefined;
+        const enableFakeTimers = existing.useFakeTimers as (() => void) | undefined;
         enableFakeTimers?.();
         void ms;
       } catch {

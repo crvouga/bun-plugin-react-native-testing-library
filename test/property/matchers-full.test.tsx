@@ -55,7 +55,7 @@ describe("property: RNTL matchers", () => {
                 testID="sw"
                 value={m.checked}
                 accessibilityRole="checkbox"
-                accessibilityState={{ checked: m.checked ? true : false }}
+                accessibilityState={{ checked: !!m.checked }}
                 onValueChange={() => {}}
               />
               <TextInput testID="input" value={m.input} onChangeText={() => {}} />

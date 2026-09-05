@@ -99,7 +99,7 @@ describe("integration: example-app under bun test", () => {
     writeBunfig(true);
 
     const { exitCode, stdout, stderr } = await runBunTest(CACHE);
-    const out = stdout + stderr;
+    const out = `${stdout}${stderr}`;
     if (exitCode !== 0) console.error(out.slice(-1200));
     expect(exitCode).toBe(0);
     expect(out).toMatch(/\d+ pass/);

@@ -27,8 +27,10 @@ export const expoDataShim: LibraryShim = {
         };
       };
 
-      const openDatabaseSync = (name: string) => {
-        const db = new Database(`:memory:${name}`);
+      // Always open a fresh anonymous in-memory DB. Named `:memory:foo` is shared
+      // across opens in bun:sqlite and would leak schema between tests.
+      const openDatabaseSync = (_name?: string) => {
+        const db = new Database(":memory:");
         return {
           execSync: (sql: string) => db.exec(sql),
           runSync: (sql: string, ...params: unknown[]) => db.run(sql, ...params),
@@ -50,7 +52,7 @@ export const expoDataShim: LibraryShim = {
 
       return {
         openDatabaseSync,
-        openDatabaseAsync: async (name: string) => openDatabaseSync(name),
+        openDatabaseAsync: async (name?: string) => openDatabaseSync(name),
         deleteDatabaseSync: noop,
         deleteDatabaseAsync: asyncNoop,
       };

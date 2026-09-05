@@ -15,6 +15,10 @@ describe("expo storage property", () => {
       fc.asyncProperty(
         fc.array(fc.tuple(key, val, fc.constantFrom("set", "get", "del")), { minLength: 1, maxLength: 12 }),
         async (ops) => {
+          // Isolate store state per property run (shim Map is process-global).
+          const seen = new Set(ops.map(([k]) => k));
+          for (const k of seen) await SecureStore.deleteItemAsync(k);
+
           const model = new Map<string, string>();
           for (const [k, v, op] of ops) {
             if (op === "set") {

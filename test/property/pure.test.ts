@@ -85,7 +85,7 @@ describe("property: asset stub totality", () => {
         fc.array(segment, { minLength: 1, maxLength: 4 }),
         fc.constantFrom(...DEFAULT_ASSET_EXTS),
         (segments, ext) => {
-          const filePath = "/" + segments.join("/") + "." + ext;
+          const filePath = `/${segments.join("/")}.${ext}`;
           expect(isAssetPath(filePath, DEFAULT_ASSET_EXTS)).toBe(true);
           const src = assetModuleSource(filePath);
           expect(() => new Bun.Transpiler({ loader: "js" }).transformSync(src)).not.toThrow();

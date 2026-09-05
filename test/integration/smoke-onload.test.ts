@@ -115,7 +115,7 @@ describe("smoke: Bun node_modules onLoad pitfall", () => {
       proc.exited,
     ]);
 
-    const combined = stdout + "\n" + stderr;
+    const combined = `${stdout}\n${stderr}`;
     const match = combined.match(/SMOKE_RESULT=(\{.*\})/);
     expect(match).toBeTruthy();
     const result = JSON.parse(match![1]!) as {
@@ -152,7 +152,7 @@ describe("smoke: Bun node_modules onLoad pitfall", () => {
     mkdirSync(path.join(ROOT, "test", "integration"), { recursive: true });
     writeFileSync(
       path.join(ROOT, "test", "integration", "smoke-onload-result.json"),
-      JSON.stringify(finding, null, 2) + "\n",
+      `${JSON.stringify(finding, null, 2)}\n`,
     );
 
     console.log("SMOKE_FINDING=", JSON.stringify(finding, null, 2));
