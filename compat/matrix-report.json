@@ -7,70 +7,70 @@
       "id": "rn078-rntl140-ios",
       "kind": "full",
       "ok": true,
-      "seconds": 1.7166634999999988,
+      "seconds": 1.0217571659999993,
       "detail": "ok"
     },
     {
       "id": "rn082-rntl141-android",
       "kind": "full",
       "ok": true,
-      "seconds": 0.8997204170000005,
+      "seconds": 0.666328375000001,
       "detail": "ok"
     },
     {
       "id": "rn087-rntl141-ios",
       "kind": "full",
       "ok": true,
-      "seconds": 0.6063957919999994,
+      "seconds": 0.543581000000002,
       "detail": "ok"
     },
     {
       "id": "rn079-light-ios",
       "kind": "light",
       "ok": true,
-      "seconds": 0.7710108340000006,
+      "seconds": 0.5680274579999969,
       "detail": "ok"
     },
     {
       "id": "rn080-light-ios",
       "kind": "light",
       "ok": true,
-      "seconds": 0.5882658340000017,
+      "seconds": 0.5193386250000003,
       "detail": "ok"
     },
     {
       "id": "rn081-light-ios",
       "kind": "light",
       "ok": true,
-      "seconds": 0.6691085840000014,
+      "seconds": 0.6299910829999972,
       "detail": "ok"
     },
     {
       "id": "rn083-light-ios",
       "kind": "light",
       "ok": true,
-      "seconds": 0.6579484590000029,
+      "seconds": 0.6276377089999987,
       "detail": "ok"
     },
     {
       "id": "rn084-light-ios",
       "kind": "light",
       "ok": true,
-      "seconds": 0.5953089169999984,
+      "seconds": 0.6099544999999998,
       "detail": "ok"
     },
     {
       "id": "rn085-light-ios",
       "kind": "light",
       "ok": true,
-      "seconds": 0.6121094580000026,
+      "seconds": 0.5940764999999992,
       "detail": "ok"
     },
     {
       "id": "rn086-light-ios",
       "kind": "light",
       "ok": true,
-      "seconds": 0.7287684169999993,
+      "seconds": 0.698809666000001,
       "detail": "ok"
     }
   ]

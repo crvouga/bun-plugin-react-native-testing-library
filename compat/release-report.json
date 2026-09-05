@@ -1,7 +1,7 @@
 {
   "ok": true,
-  "startedAt": "2026-09-05T02:24:36.278Z",
-  "finishedAt": "2026-09-05T02:26:48.090Z",
+  "startedAt": "2026-09-05T02:26:53.012Z",
+  "finishedAt": "2026-09-05T02:28:58.240Z",
   "bun": "1.4.1",
   "platform": "darwin",
   "arch": "arm64",
@@ -10,77 +10,77 @@
       "id": "bootstrap-fixtures",
       "label": "Bootstrap fixtures (frozen sandbox installs)",
       "ok": true,
-      "seconds": 0.5858365829999999,
+      "seconds": 0.591807333,
       "exitCode": 0
     },
     {
       "id": "format",
       "label": "Format check",
       "ok": true,
-      "seconds": 0.07645849999999996,
+      "seconds": 0.08179795799999999,
       "exitCode": 0
     },
     {
       "id": "lint",
       "label": "Lint",
       "ok": true,
-      "seconds": 0.12079737499999998,
+      "seconds": 0.15873020800000007,
       "exitCode": 0
     },
     {
       "id": "typecheck",
       "label": "Typecheck",
       "ok": true,
-      "seconds": 1.0970205000000002,
+      "seconds": 1.38853575,
       "exitCode": 0
     },
     {
       "id": "verify-package",
       "label": "Verify package / tarball",
       "ok": true,
-      "seconds": 18.296849374999997,
+      "seconds": 19.079277791,
       "exitCode": 0
     },
     {
       "id": "compat-matrix",
       "label": "npm-pack clean-consumer matrix",
       "ok": true,
-      "seconds": 38.153535709,
+      "seconds": 33.863402457999996,
       "exitCode": 0
     },
     {
       "id": "differential-oracle",
       "label": "Differential oracle (Bun vs official RN Jest)",
       "ok": true,
-      "seconds": 1.1487987500000016,
+      "seconds": 1.1241313329999976,
       "exitCode": 0
     },
     {
       "id": "tests",
       "label": "Contract / property / unit / integration / meta tests",
       "ok": true,
-      "seconds": 11.227340499999999,
+      "seconds": 10.824452250000009,
       "exitCode": 0
     },
     {
       "id": "walks",
       "label": "Model walks (multi-seed + soak)",
       "ok": true,
-      "seconds": 1.0482298750000045,
+      "seconds": 1.1148840000000055,
       "exitCode": 0
     },
     {
       "id": "coverage-manifest",
       "label": "Shim coverage manifest",
       "ok": true,
-      "seconds": 0.01488495900000271,
+      "seconds": 0.014200167000002694,
       "exitCode": 0
     },
     {
       "id": "canaries",
       "label": "Mutation canaries (temp copies)",
       "ok": true,
-      "seconds": 60.04142487499998,
+      "seconds": 56.986768958,
       "exitCode": 0
     }
   ],
