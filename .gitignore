@@ -1,5 +1,8 @@
 node_modules/
 coverage/
+# Ephemeral bun check / gate reports (never commit)
+.compat-out/
+/compat/
 *.log
 .DS_Store
 .cache/

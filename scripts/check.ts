@@ -1,9 +1,9 @@
 /**
  * Canonical release gate: `bun check`.
  *
- * Runs every stage in CHECK_STAGES, writes compat/release-report.json, and
- * prints RELEASE READY only after all stages pass. Leaves the tree unchanged
- * (canaries use temp copies when RN_BUN_CANARY_TEMP=1).
+ * Runs every stage in CHECK_STAGES, writes `.compat-out/release-report.json`
+ * (gitignored), and prints RELEASE READY only after all stages pass.
+ * Does not update tracked source files (canaries use temp copies).
  */
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";

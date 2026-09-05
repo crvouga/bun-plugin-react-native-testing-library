@@ -47,6 +47,6 @@ describe("meta: release gate manifest", () => {
 
   test("sentinel and report path are stable", () => {
     expect(RELEASE_READY_SENTINEL).toBe("RELEASE READY: bun check passed");
-    expect(REPORT_PATH).toBe("compat/release-report.json");
+    expect(REPORT_PATH).toBe(".compat-out/release-report.json");
   });
 });

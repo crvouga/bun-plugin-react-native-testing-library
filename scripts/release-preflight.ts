@@ -75,9 +75,9 @@ if (failed) {
 }
 
 if (process.env.RN_BUN_RELEASE_GATE === "1" || process.env.GITHUB_ACTIONS === "true") {
-  const reportPath = join(root, "compat", "release-report.json");
+  const reportPath = join(root, ".compat-out", "release-report.json");
   if (!existsSync(reportPath)) {
-    error("Missing compat/release-report.json from bun check", [
+    error("Missing .compat-out/release-report.json from bun check", [
       "Release requires the canonical bun check report.",
       "Run: bun check",
     ]);
@@ -87,7 +87,7 @@ if (process.env.RN_BUN_RELEASE_GATE === "1" || process.env.GITHUB_ACTIONS === "t
       sentinel?: string | null;
     };
     if (!report.ok || report.sentinel !== "RELEASE READY: bun check passed") {
-      error("compat/release-report.json is not RELEASE READY", [
+      error(".compat-out/release-report.json is not RELEASE READY", [
         "Re-run bun check until it prints RELEASE READY: bun check passed",
       ]);
     }
@@ -101,7 +101,7 @@ if (failed) {
 
 console.log("release-preflight: OK");
 console.log("  - package sources present");
-if (existsSync(join(root, "compat", "release-report.json"))) {
+if (existsSync(join(root, ".compat-out", "release-report.json"))) {
   console.log("  - bun check release report present");
 }
 if (oidcReady) {

@@ -76,7 +76,7 @@ if (!onMain && base) {
 
 await runStep("bun check (canonical release gate)", ["bun", "check"]);
 
-const report = join(root, "compat", "release-report.json");
+const report = join(root, ".compat-out", "release-report.json");
 const text = await Bun.file(report).text();
 if (!text.includes("RELEASE READY") && !JSON.parse(text).ok) {
   console.error("check:full: release report missing ok=true");

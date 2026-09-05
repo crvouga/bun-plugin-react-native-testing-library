@@ -83,7 +83,7 @@ describe("oracle: bun traces", () => {
     }
 
     const result: TraceResult = { ops, presses, text, label };
-    const out = process.env.RN_BUN_ORACLE_OUT ?? join(import.meta.dir, "../../compat/oracle-corpus/bun-trace.json");
+    const out = process.env.RN_BUN_ORACLE_OUT ?? join(import.meta.dir, "../../.compat-out/oracle-corpus/bun-trace.json");
     mkdirSync(dirname(out), { recursive: true });
     writeFileSync(out, `${JSON.stringify(result)}\n`);
   });

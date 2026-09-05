@@ -7,11 +7,12 @@
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { compatOut } from "./paths.ts";
 
 const ROOT = join(import.meta.dir, "../..");
 const FIXTURE = join(ROOT, "test", "oracle", "jest-fixture");
-const CORPUS = join(ROOT, "compat", "oracle-corpus");
-const REPORT = join(ROOT, "compat", "oracle-report.json");
+const CORPUS = join(ROOT, compatOut("oracle-corpus"));
+const REPORT = join(ROOT, compatOut("oracle-report.json"));
 
 async function run(cmd: string[], cwd: string, env?: Record<string, string>): Promise<{ code: number; out: string }> {
   const proc = Bun.spawn(cmd, {
@@ -91,7 +92,7 @@ async function main(): Promise<void> {
   if (!ok) {
     writeFileSync(join(CORPUS, "diff-bun.json"), `${bunJson}\n`);
     writeFileSync(join(CORPUS, "diff-jest.json"), `${jestJson}\n`);
-    console.error("Differential oracle FAILED — traces diverge. See compat/oracle-corpus/diff-*.json");
+    console.error(`Differential oracle FAILED — traces diverge. See ${compatOut("oracle-corpus")}/diff-*.json`);
     process.exit(1);
   }
 

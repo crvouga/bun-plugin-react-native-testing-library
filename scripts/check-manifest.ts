@@ -80,4 +80,5 @@ export const CHECK_STAGES: readonly CheckStage[] = [
 
 export const RELEASE_READY_SENTINEL = "RELEASE READY: bun check passed";
 
-export const REPORT_PATH = "compat/release-report.json";
+/** Ephemeral — under `.compat-out/` (gitignored). Never commit gate reports. */
+export const REPORT_PATH = ".compat-out/release-report.json";

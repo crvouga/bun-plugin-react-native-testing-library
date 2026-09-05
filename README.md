@@ -79,9 +79,9 @@ plugin(createReactNativePlugin({ platform: "ios", debug: true }));
 ## Compatibility
 
 **Release law:** `bun check` is the only canonical release gate. A green run writes
-`compat/release-report.json` and prints `RELEASE READY: bun check passed`.
+`.compat-out/release-report.json` (gitignored) and prints `RELEASE READY: bun check passed`.
 `check:full`, CI, and the release job all consume that same gate (they may only
-add environment setup / OS / Bun version axes).
+add environment setup / OS / Bun version axes). Gate artifacts never update tracked files.
 
 ### Proven envelope (evidence-backed)
 
@@ -104,7 +104,7 @@ No `jest`, `jest-expo`, or `metro` packages appear in this package's direct `dep
 
 - Correctness of real native SDKs (camera, payments, biometrics hardware, Firebase servers, etc.)
 - Pixel-perfect host rendering parity with iOS/Android
-- That every app on npm will pass without additional shims — only the **catalogued** packages under `test/real-world/` / `test/real-world-expo/` with statuses in `compat/coverage-manifest.json` (`behavioral` / `import-only` / `unsupported`)
+- That every app on npm will pass without additional shims — only the **catalogued** packages under `test/real-world/` / `test/real-world-expo/` with statuses in `.compat-out/coverage-manifest.json` after `bun check` (`behavioral` / `import-only` / `unsupported`)
 
 ## Options
 
@@ -126,7 +126,7 @@ Configure via `createReactNativePlugin(options)`, env vars, or optional `./rn-bu
 
 When a package is installed in the consumer, preload auto-registers a shim (`libraryMocks: "auto"`). Proven in [`test/real-world/`](test/real-world/) against the versions below.
 
-Fail-closed scanners (`test/contract/deep-path-inventory.test.ts`, `test/contract/import-surface.test.ts`) walk the sandbox catalog: every deep `react-native/Libraries|src/...` import must be in `DEEP_PATHS`, every direct sandbox dependency must be catalogued (or infra-allowlisted), and every native surface must map to a registry shim. Coverage evidence is recorded in `compat/coverage-manifest.json`.
+Fail-closed scanners (`test/contract/deep-path-inventory.test.ts`, `test/contract/import-surface.test.ts`) walk the sandbox catalog: every deep `react-native/Libraries|src/...` import must be in `DEEP_PATHS`, every direct sandbox dependency must be catalogued (or infra-allowlisted), and every native surface must map to a registry shim. Coverage evidence is written to `.compat-out/coverage-manifest.json` by `bun check` (not committed).
 
 | Library | Strategy | Version tested | Notes |
 | --- | --- | --- | --- |

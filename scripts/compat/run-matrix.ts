@@ -9,9 +9,10 @@ import { cpSync, existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } fro
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { ALL_ROWS, type MatrixRow } from "./matrix.ts";
+import { COMPAT_OUT_DIR, compatOut } from "./paths.ts";
 
 const ROOT = join(import.meta.dir, "../..");
-const REPORT = join(ROOT, "compat", "matrix-report.json");
+const REPORT = join(ROOT, compatOut("matrix-report.json"));
 
 type RowResult = {
   id: string;
@@ -178,7 +179,7 @@ async function main(): Promise<void> {
     }
   }
 
-  mkdirSync(join(ROOT, "compat"), { recursive: true });
+  mkdirSync(join(ROOT, COMPAT_OUT_DIR), { recursive: true });
   writeFileSync(
     REPORT,
     `${JSON.stringify(

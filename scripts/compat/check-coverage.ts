@@ -9,6 +9,7 @@ import { join } from "node:path";
 import { LIBRARY_REGISTRY } from "../../src/libraries/index.ts";
 import { REAL_WORLD_CATALOG } from "../../test/contract/scan/catalog.ts";
 import { CANARIES } from "../../test/meta/canaries/defs.ts";
+import { COMPAT_OUT_DIR, compatOut } from "./paths.ts";
 
 const ROOT = join(import.meta.dir, "../..");
 
@@ -85,8 +86,8 @@ function buildRows(): CoverageRow[] {
 
 async function main(): Promise<void> {
   const rows = buildRows();
-  const reportPath = join(ROOT, "compat", "coverage-manifest.json");
-  mkdirSync(join(ROOT, "compat"), { recursive: true });
+  const reportPath = join(ROOT, compatOut("coverage-manifest.json"));
+  mkdirSync(join(ROOT, COMPAT_OUT_DIR), { recursive: true });
   writeFileSync(reportPath, `${JSON.stringify({ rows, requiredMutants: [...REQUIRED_MUTANTS] }, null, 2)}\n`);
 
   const hard = rows.filter(

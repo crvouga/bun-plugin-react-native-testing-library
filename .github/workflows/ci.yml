@@ -29,21 +29,16 @@ jobs:
           fetch-depth: 0
 
       - uses: oven-sh/setup-bun@v2
+        if: github.event_name == 'pull_request'
         with:
           bun-version: "1.4.0"
 
       - name: Install dependencies
+        if: github.event_name == 'pull_request'
         run: bun install --frozen-lockfile
 
-      - name: Note push commitlint policy
-        if: github.event_name == 'push'
-        run: |
-          set +e
-          bunx commitlint --last --verbose
-          status=$?
-          if [ "$status" -ne 0 ]; then
-            echo "::warning::HEAD is not Conventional Commits. Enforced on PRs."
-          fi
+      # Conventional Commits enforced on PRs only (title + commit range).
+      # Direct pushes to main are not annotated — release still runs via semantic-release.
 
       - name: Validate PR commits
         if: github.event_name == 'pull_request'
@@ -86,19 +81,19 @@ jobs:
 
       - name: Require RELEASE READY report
         run: |
-          test -f compat/release-report.json
-          node -e 'const r=require("./compat/release-report.json"); if(!r.ok||r.sentinel!=="RELEASE READY: bun check passed") process.exit(1)'
+          test -f .compat-out/release-report.json
+          node -e 'const r=require("./.compat-out/release-report.json"); if(!r.ok||r.sentinel!=="RELEASE READY: bun check passed") process.exit(1)'
 
       - name: Upload release report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: release-report-linux
           path: |
-            compat/release-report.json
-            compat/matrix-report.json
-            compat/oracle-report.json
-            compat/coverage-manifest.json
+            .compat-out/release-report.json
+            .compat-out/matrix-report.json
+            .compat-out/oracle-report.json
+            .compat-out/coverage-manifest.json
 
   check-macos:
     name: bun check (macOS / Bun latest)
@@ -119,19 +114,19 @@ jobs:
 
       - name: Require RELEASE READY report
         run: |
-          test -f compat/release-report.json
-          node -e 'const r=require("./compat/release-report.json"); if(!r.ok||r.sentinel!=="RELEASE READY: bun check passed") process.exit(1)'
+          test -f .compat-out/release-report.json
+          node -e 'const r=require("./.compat-out/release-report.json"); if(!r.ok||r.sentinel!=="RELEASE READY: bun check passed") process.exit(1)'
 
       - name: Upload release report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: release-report-macos
           path: |
-            compat/release-report.json
-            compat/matrix-report.json
-            compat/oracle-report.json
-            compat/coverage-manifest.json
+            .compat-out/release-report.json
+            .compat-out/matrix-report.json
+            .compat-out/oracle-report.json
+            .compat-out/coverage-manifest.json
 
   release:
     name: Release
@@ -171,8 +166,8 @@ jobs:
 
       - name: Require RELEASE READY report
         run: |
-          test -f compat/release-report.json
-          node -e 'const r=require("./compat/release-report.json"); if(!r.ok||r.sentinel!=="RELEASE READY: bun check passed") process.exit(1)'
+          test -f .compat-out/release-report.json
+          node -e 'const r=require("./.compat-out/release-report.json"); if(!r.ok||r.sentinel!=="RELEASE READY: bun check passed") process.exit(1)'
 
       - name: Release preflight
         run: bun run release:preflight
