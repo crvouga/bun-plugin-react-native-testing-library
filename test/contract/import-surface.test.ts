@@ -96,7 +96,7 @@ describe("contract: import-surface explorer", () => {
         }`,
       );
     }
-  });
+  }, 30_000);
 
   test("catalog packages require non-empty + expected exports (sandbox spawn)", async () => {
     const probe = path.join(SANDBOX, "import-surface-probe.ts");

@@ -5,17 +5,23 @@
  * hazards so new third-party packages cannot silently crash bun:test.
  */
 
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync, type Dirent } from "node:fs";
 import path from "node:path";
 import { DEEP_IMPORT_PATTERNS, NATIVE_SURFACE_PATTERNS, SCAN_EXTS, type CatalogEntry } from "./catalog.ts";
 
-/** Directories skipped while walking. dist/build ARE scanned (shipped runtime). */
+/** Directories skipped while walking. dist/build ARE scanned (shipped runtime). Native trees and .d.ts are not. */
 const SKIP_DIRS = new Set([
   "node_modules",
   ".git",
   "android",
   "ios",
+  "apple",
+  "cpp",
+  "windows",
+  "macos",
+  "Common",
   "__tests__",
+  "__mocks__",
   "tests",
   "test",
   "docs",
@@ -25,6 +31,7 @@ const SKIP_DIRS = new Set([
   ".yarn",
   "flow-typed",
   "__flowtests__",
+  "coverage",
 ]);
 
 export type ScanIssue = {
@@ -42,32 +49,62 @@ export function packageDir(nodeModules: string, name: string): string | null {
   return existsSync(dir) ? dir : null;
 }
 
+function isDeclFile(name: string): boolean {
+  return name.endsWith(".d.ts") || name.endsWith(".d.mts") || name.endsWith(".d.cts");
+}
+
+function considerFile(name: string, full: string, out: string[]): void {
+  if (isDeclFile(name)) return;
+  if (SCAN_EXTS.has(path.extname(name))) out.push(full);
+}
+
+function walkDirent(
+  ent: Dirent,
+  dir: string,
+  out: string[],
+  issues: ScanIssue[],
+  pkgName: string,
+  depth: number,
+): void {
+  const name = ent.name;
+  if (name.startsWith(".")) return;
+  const full = path.join(dir, name);
+  if (ent.isDirectory()) {
+    if (SKIP_DIRS.has(name)) return;
+    walkFiles(full, out, issues, pkgName, depth + 1);
+    return;
+  }
+  if (ent.isFile()) {
+    considerFile(name, full, out);
+    return;
+  }
+  // Symlinks: follow like statSync (Dirent isDirectory/isFile are false for link-to-dir/file).
+  let st;
+  try {
+    st = statSync(full);
+  } catch (err) {
+    issues.push({ package: pkgName, path: full, reason: `unreadable path: ${(err as Error).message}` });
+    return;
+  }
+  if (st.isDirectory()) {
+    if (SKIP_DIRS.has(name)) return;
+    walkFiles(full, out, issues, pkgName, depth + 1);
+  } else if (st.isFile()) {
+    considerFile(name, full, out);
+  }
+}
+
 function walkFiles(dir: string, out: string[], issues: ScanIssue[], pkgName: string, depth = 0): void {
   if (depth > 16) return;
-  let entries: string[];
+  let entries: Dirent[];
   try {
-    entries = readdirSync(dir);
+    entries = readdirSync(dir, { withFileTypes: true });
   } catch (err) {
     issues.push({ package: pkgName, path: dir, reason: `unreadable directory: ${(err as Error).message}` });
     return;
   }
-  for (const name of entries) {
-    if (name.startsWith(".")) continue;
-    const full = path.join(dir, name);
-    let st;
-    try {
-      st = statSync(full);
-    } catch (err) {
-      issues.push({ package: pkgName, path: full, reason: `unreadable path: ${(err as Error).message}` });
-      continue;
-    }
-    if (st.isDirectory()) {
-      if (SKIP_DIRS.has(name)) continue;
-      walkFiles(full, out, issues, pkgName, depth + 1);
-    } else if (st.isFile()) {
-      const ext = path.extname(name);
-      if (SCAN_EXTS.has(ext)) out.push(full);
-    }
+  for (const ent of entries) {
+    walkDirent(ent, dir, out, issues, pkgName, depth);
   }
 }
 
@@ -101,7 +138,7 @@ export function scanDeepImports(
   const found = new Set<string>();
   for (const file of files) {
     const src = readSource(file, pkgName, issues);
-    if (src == null) continue;
+    if (src == null || !src.includes("react-native/")) continue;
     for (const re of DEEP_IMPORT_PATTERNS) {
       re.lastIndex = 0;
       let m: RegExpExecArray | null;
@@ -175,7 +212,17 @@ export function collectNativeSurfaces(
     walkFiles(dir, files, issues, entry.name);
     for (const file of files) {
       const src = readSource(file, entry.name, issues);
-      if (src == null) continue;
+      if (
+        src == null ||
+        !(
+          src.includes("TurboModuleRegistry") ||
+          src.includes("NativeModules") ||
+          src.includes("codegenNativeComponent") ||
+          src.includes("requireNativeComponent")
+        )
+      ) {
+        continue;
+      }
       NATIVE_SURFACE_PATTERNS.forEach((re, idx) => {
         re.lastIndex = 0;
         let m: RegExpExecArray | null;

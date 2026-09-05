@@ -88,7 +88,7 @@ describe("contract: deep-path inventory", () => {
         .map(([spec, pkgs]) => `  ${spec}  ←  ${[...new Set(pkgs)].join(", ")}`);
       expect.unreachable(`Unmocked expo deep imports:\n${lines.join("\n")}`);
     }
-  });
+  }, 30_000);
 
   test("DEEP_PATHS keys are unique and look like react-native paths", () => {
     const keys = Object.keys(DEEP_PATHS);
