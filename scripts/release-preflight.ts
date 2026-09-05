@@ -1,7 +1,7 @@
 /**
  * Loud preflight checks before semantic-release runs on main.
  */
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 const root = join(import.meta.dir, "..");
@@ -66,6 +66,33 @@ if (pkg.private === true) {
   error('package.json has "private": true', [
     "npm will refuse to publish a private package.",
     'Remove "private" from package.json.',
+  ]);
+}
+
+function resolvedPkgVersion(name: string): { version: string; major: number } | null {
+  try {
+    const pkgJson = Bun.resolveSync(`${name}/package.json`, root);
+    const resolved = JSON.parse(readFileSync(pkgJson, "utf8")) as { version?: string };
+    const version = resolved.version ?? "";
+    const major = Number.parseInt(version.split(".")[0] ?? "", 10);
+    if (!version || !Number.isFinite(major)) return null;
+    return { version, major };
+  } catch {
+    return null;
+  }
+}
+
+const preset = resolvedPkgVersion("conventional-changelog-conventionalcommits");
+const writer = resolvedPkgVersion("conventional-changelog-writer");
+if (preset && writer && preset.major >= 10 && writer.major < 9) {
+  error("Changelog preset/writer mismatch — generateNotes will crash", [
+    `conventional-changelog-conventionalcommits@${preset.version} requires conventional-changelog-writer@9+`,
+    `@semantic-release/release-notes-generator still resolved writer@${writer.version}`,
+    "",
+    "Pin the preset to the last writer@8-compatible version:",
+    '  "conventional-changelog-conventionalcommits": "9.3.1"',
+    "Do not use ^10 until @semantic-release/release-notes-generator 15 (writer@9) is stable.",
+    "https://github.com/semantic-release/release-notes-generator/issues/1027",
   ]);
 }
 

@@ -93,7 +93,7 @@
     "@types/babel__core": "^7.20.5",
     "@types/bun": "latest",
     "@types/react": "^19.1.1",
-    "conventional-changelog-conventionalcommits": "^10.3.0",
+    "conventional-changelog-conventionalcommits": "9.3.1",
     "fast-check": "4.9.0",
     "husky": "^9.1.7",
     "publint": "^0.3.23",
