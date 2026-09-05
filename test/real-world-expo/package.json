@@ -9,7 +9,6 @@
     "@expo/vector-icons": "^15.0.2",
     "@react-navigation/native": "^7.1.6",
     "@testing-library/react-native": "14.0.1",
-    "bun-plugin-react-native-testing-library": "file:../..",
     "expo": "57.0.20",
     "expo-application": "~57.0.2",
     "expo-audio": "~57.0.4",

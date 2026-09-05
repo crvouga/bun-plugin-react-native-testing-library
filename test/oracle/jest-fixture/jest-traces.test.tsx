@@ -1,36 +1,13 @@
 /**
- * Jest-side differential oracle driver (official RN Jest preset).
+ * Jest-side differential oracle driver (official RN Jest environment).
+ * Must emit the same TraceResult shape as bun-traces.test.tsx.
  */
 import { useState } from "react";
 import { Pressable, Text, TextInput, View } from "react-native";
 import { act, fireEvent, render } from "@testing-library/react-native";
 import * as fs from "node:fs";
 import * as path from "node:path";
-
-type TraceOp =
-  | { op: "render" }
-  | { op: "queryByTestId"; id: string; found: boolean }
-  | { op: "queryByText"; text: string; found: boolean }
-  | { op: "queryByRole"; role: string; found: boolean }
-  | { op: "getByLabelText"; label: string; found: boolean }
-  | { op: "press"; id: string }
-  | { op: "changeText"; id: string; value: string }
-  | { op: "rerender"; label: string }
-  | { op: "unmount" }
-  | { op: "assert"; key: string; value: string | number | boolean | null };
-
-const ORACLE_SEQUENCE = [
-  "render",
-  "query-root",
-  "query-button-role",
-  "query-label",
-  "type",
-  "press",
-  "press",
-  "rerender",
-  "query-text",
-  "unmount",
-] as const;
+import { ORACLE_SEQUENCE, type TraceOp, type TraceResult } from "../shared-trace";
 
 function OracleApp({ label }: { label: string }) {
   const [text, setText] = useState("");
@@ -58,7 +35,7 @@ test("emit deterministic operation trace", async () => {
   let text = "";
   let label = "v1";
 
-  const screen = render(<OracleApp label={label} />);
+  const screen = await render(<OracleApp label={label} />);
   ops.push({ op: "render" });
 
   for (const step of ORACLE_SEQUENCE) {
@@ -91,20 +68,21 @@ test("emit deterministic operation trace", async () => {
       expect(screen.getByTestId("count")).toHaveTextContent(String(presses));
     } else if (step === "rerender") {
       label = "v2";
-      screen.rerender(<OracleApp label={label} />);
+      await screen.rerender(<OracleApp label={label} />);
       ops.push({ op: "rerender", label });
       ops.push({ op: "queryByText", text: "v2", found: screen.queryByText("v2") != null });
     } else if (step === "query-text") {
       const found = screen.queryByText("hello") != null;
       ops.push({ op: "queryByText", text: "hello", found });
     } else if (step === "unmount") {
-      screen.unmount();
+      await screen.unmount();
       ops.push({ op: "unmount" });
     }
   }
 
+  const result: TraceResult = { ops, presses, text, label };
   const out = process.env.RN_BUN_ORACLE_OUT;
   if (!out) throw new Error("RN_BUN_ORACLE_OUT is required");
   fs.mkdirSync(path.dirname(out), { recursive: true });
-  fs.writeFileSync(out, `${JSON.stringify({ ops, presses, text, label })}\n`);
+  fs.writeFileSync(out, `${JSON.stringify(result)}\n`);
 });

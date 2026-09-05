@@ -1,5 +1,5 @@
 {
-  "ok": false,
+  "ok": true,
   "bun": "1.4.1",
   "platform": "darwin",
   "rows": [
@@ -7,71 +7,71 @@
       "id": "rn078-rntl140-ios",
       "kind": "full",
       "ok": true,
-      "seconds": 2.3775999590000003,
+      "seconds": 1.7166634999999988,
       "detail": "ok"
     },
     {
       "id": "rn082-rntl141-android",
       "kind": "full",
       "ok": true,
-      "seconds": 1.924735417,
+      "seconds": 0.8997204170000005,
       "detail": "ok"
     },
     {
       "id": "rn087-rntl141-ios",
       "kind": "full",
       "ok": true,
-      "seconds": 0.5508629999999993,
+      "seconds": 0.6063957919999994,
       "detail": "ok"
     },
     {
       "id": "rn079-light-ios",
       "kind": "light",
-      "ok": false,
-      "seconds": 1.4548903330000003,
-      "detail": "bun test v1.4.1 (4661e494f)\n\n\nimport.test.ts:\n30 |     });\n31 |   }\n32 |   if (typeof beforeAll === 'function' && typeof afterAll === 'function') {\n33 |     // This matches the behavior of React < 18.\n34 |     let previousIsReactActEnvironment = (0, _act.getIsReactActEnvironment)();\n35 |     beforeAll(() => {\n         ^\nerror: Cannot call beforeAll() inside a test. Call it inside describe() instead.\n      at <anonymous> (/private/var/folders/fz/9yx28kz10c3dsh38kbwzyq_w0000gn/T/rn-bun-matrix-mg4yAu/rn079-light-ios/node_modules/@testing-library/react-native/dist/index.js:35:5)\n(fail) matrix light import surface [18.84ms]\nRan 1 test across 1 file. [150.00ms]\nBailed out after 1 failure\n"
+      "ok": true,
+      "seconds": 0.7710108340000006,
+      "detail": "ok"
     },
     {
       "id": "rn080-light-ios",
       "kind": "light",
-      "ok": false,
-      "seconds": 0.5675693339999998,
-      "detail": "bun test v1.4.1 (4661e494f)\n\n\nimport.test.ts:\n30 |     });\n31 |   }\n32 |   if (typeof beforeAll === 'function' && typeof afterAll === 'function') {\n33 |     // This matches the behavior of React < 18.\n34 |     let previousIsReactActEnvironment = (0, _act.getIsReactActEnvironment)();\n35 |     beforeAll(() => {\n         ^\nerror: Cannot call beforeAll() inside a test. Call it inside describe() instead.\n      at <anonymous> (/private/var/folders/fz/9yx28kz10c3dsh38kbwzyq_w0000gn/T/rn-bun-matrix-mg4yAu/rn080-light-ios/node_modules/@testing-library/react-native/dist/index.js:35:5)\n(fail) matrix light import surface [20.33ms]\nRan 1 test across 1 file. [149.00ms]\nBailed out after 1 failure\n"
+      "ok": true,
+      "seconds": 0.5882658340000017,
+      "detail": "ok"
     },
     {
       "id": "rn081-light-ios",
       "kind": "light",
-      "ok": false,
-      "seconds": 0.6222082500000006,
-      "detail": "bun test v1.4.1 (4661e494f)\n\n\nimport.test.ts:\n30 |     });\n31 |   }\n32 |   if (typeof beforeAll === 'function' && typeof afterAll === 'function') {\n33 |     // This matches the behavior of React < 18.\n34 |     let previousIsReactActEnvironment = (0, _act.getIsReactActEnvironment)();\n35 |     beforeAll(() => {\n         ^\nerror: Cannot call beforeAll() inside a test. Call it inside describe() instead.\n      at <anonymous> (/private/var/folders/fz/9yx28kz10c3dsh38kbwzyq_w0000gn/T/rn-bun-matrix-mg4yAu/rn081-light-ios/node_modules/@testing-library/react-native/dist/index.js:35:5)\n(fail) matrix light import surface [19.93ms]\nRan 1 test across 1 file. [148.00ms]\nBailed out after 1 failure\n"
+      "ok": true,
+      "seconds": 0.6691085840000014,
+      "detail": "ok"
     },
     {
       "id": "rn083-light-ios",
       "kind": "light",
-      "ok": false,
-      "seconds": 1.3070154160000003,
-      "detail": "bun test v1.4.1 (4661e494f)\n\n\nimport.test.ts:\n30 |     });\n31 |   }\n32 |   if (typeof beforeAll === 'function' && typeof afterAll === 'function') {\n33 |     // This matches the behavior of React < 18.\n34 |     let previousIsReactActEnvironment = (0, _act.getIsReactActEnvironment)();\n35 |     beforeAll(() => {\n         ^\nerror: Cannot call beforeAll() inside a test. Call it inside describe() instead.\n      at <anonymous> (/private/var/folders/fz/9yx28kz10c3dsh38kbwzyq_w0000gn/T/rn-bun-matrix-mg4yAu/rn083-light-ios/node_modules/@testing-library/react-native/dist/index.js:35:5)\n(fail) matrix light import surface [20.11ms]\nRan 1 test across 1 file. [158.00ms]\nBailed out after 1 failure\n"
+      "ok": true,
+      "seconds": 0.6579484590000029,
+      "detail": "ok"
     },
     {
       "id": "rn084-light-ios",
       "kind": "light",
-      "ok": false,
-      "seconds": 1.292835459,
-      "detail": "bun test v1.4.1 (4661e494f)\n\n\nimport.test.ts:\n30 |     });\n31 |   }\n32 |   if (typeof beforeAll === 'function' && typeof afterAll === 'function') {\n33 |     // This matches the behavior of React < 18.\n34 |     let previousIsReactActEnvironment = (0, _act.getIsReactActEnvironment)();\n35 |     beforeAll(() => {\n         ^\nerror: Cannot call beforeAll() inside a test. Call it inside describe() instead.\n      at <anonymous> (/private/var/folders/fz/9yx28kz10c3dsh38kbwzyq_w0000gn/T/rn-bun-matrix-mg4yAu/rn084-light-ios/node_modules/@testing-library/react-native/dist/index.js:35:5)\n(fail) matrix light import surface [23.10ms]\nRan 1 test across 1 file. [155.00ms]\nBailed out after 1 failure\n"
+      "ok": true,
+      "seconds": 0.5953089169999984,
+      "detail": "ok"
     },
     {
       "id": "rn085-light-ios",
       "kind": "light",
-      "ok": false,
-      "seconds": 0.8517227500000009,
-      "detail": "bun test v1.4.1 (4661e494f)\n\n\nimport.test.ts:\n30 |     });\n31 |   }\n32 |   if (typeof beforeAll === 'function' && typeof afterAll === 'function') {\n33 |     // This matches the behavior of React < 18.\n34 |     let previousIsReactActEnvironment = (0, _act.getIsReactActEnvironment)();\n35 |     beforeAll(() => {\n         ^\nerror: Cannot call beforeAll() inside a test. Call it inside describe() instead.\n      at <anonymous> (/private/var/folders/fz/9yx28kz10c3dsh38kbwzyq_w0000gn/T/rn-bun-matrix-mg4yAu/rn085-light-ios/node_modules/@testing-library/react-native/dist/index.js:35:5)\n(fail) matrix light import surface [22.80ms]\nRan 1 test across 1 file. [161.00ms]\nBailed out after 1 failure\n"
+      "ok": true,
+      "seconds": 0.6121094580000026,
+      "detail": "ok"
     },
     {
       "id": "rn086-light-ios",
       "kind": "light",
-      "ok": false,
-      "seconds": 0.7347954169999994,
-      "detail": "bun test v1.4.1 (4661e494f)\n\n\nimport.test.ts:\n30 |     });\n31 |   }\n32 |   if (typeof beforeAll === 'function' && typeof afterAll === 'function') {\n33 |     // This matches the behavior of React < 18.\n34 |     let previousIsReactActEnvironment = (0, _act.getIsReactActEnvironment)();\n35 |     beforeAll(() => {\n         ^\nerror: Cannot call beforeAll() inside a test. Call it inside describe() instead.\n      at <anonymous> (/private/var/folders/fz/9yx28kz10c3dsh38kbwzyq_w0000gn/T/rn-bun-matrix-mg4yAu/rn086-light-ios/node_modules/@testing-library/react-native/dist/index.js:35:5)\n(fail) matrix light import surface [21.43ms]\nRan 1 test across 1 file. [149.00ms]\nBailed out after 1 failure\n"
+      "ok": true,
+      "seconds": 0.7287684169999993,
+      "detail": "ok"
     }
   ]
 }

@@ -5,7 +5,6 @@ pathIgnorePatterns = [
   "test/real-world/**",
   "test/real-world-expo/**",
   "test/oracle/jest-fixture/**",
-  "test/oracle/bun-traces.test.tsx",
 ]
 
 # Coverage: `bun test --coverage` (see package.json).

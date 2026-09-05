@@ -312,7 +312,14 @@ describe("kitchen-sink fc.commands walk", () => {
     await AsyncStorage.clear();
     await fc.assert(
       fc.asyncProperty(fc.commands(allCommands, { maxCommands: 16, size: "+1" }), async (commands) => {
+        // Reset module-level native mocks between runs — NetInfo/Clipboard persist otherwise.
         await AsyncStorage.clear();
+        await Clipboard.setString("");
+        const netApi = NetInfo as typeof NetInfo & {
+          setStateForTests?: (p: { isConnected: boolean; isInternetReachable: boolean; type?: string }) => void;
+        };
+        netApi.setStateForTests?.({ isConnected: true, isInternetReachable: true, type: "wifi" });
+
         let text = "";
         let items: string[] = [];
         let slider = 0;

@@ -44,7 +44,7 @@ async function main(): Promise<void> {
   await ensureFixtureInstalled();
 
   console.log("▸ oracle: Bun plugin traces");
-  const bun = await run([process.execPath, "test", "--bail", "test/oracle/bun-traces.test.tsx"], ROOT, {
+  const bun = await run([process.execPath, "test", "--bail", "./test/oracle/bun-traces.test.tsx"], ROOT, {
     RN_BUN_ORACLE_OUT: join(CORPUS, "bun-trace.json"),
   });
   if (bun.code !== 0) {

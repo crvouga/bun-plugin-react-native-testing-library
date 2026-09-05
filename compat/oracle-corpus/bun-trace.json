@@ -1,0 +1,20 @@
+{
+  "ops": [
+    { "op": "render" },
+    { "op": "queryByTestId", "id": "root", "found": true },
+    { "op": "queryByRole", "role": "button", "found": true },
+    { "op": "getByLabelText", "label": "increment", "found": true },
+    { "op": "changeText", "id": "input", "value": "hello" },
+    { "op": "press", "id": "btn" },
+    { "op": "assert", "key": "count", "value": "1" },
+    { "op": "press", "id": "btn" },
+    { "op": "assert", "key": "count", "value": "2" },
+    { "op": "rerender", "label": "v2" },
+    { "op": "queryByText", "text": "v2", "found": true },
+    { "op": "queryByText", "text": "hello", "found": true },
+    { "op": "unmount" }
+  ],
+  "presses": 2,
+  "text": "hello",
+  "label": "v2"
+}

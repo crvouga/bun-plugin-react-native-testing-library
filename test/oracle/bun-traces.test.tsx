@@ -3,7 +3,8 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import { writeFileSync } from "node:fs";
+import { mkdirSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { useState } from "react";
 import { Pressable, Text, TextInput, View } from "react-native";
 import { act, fireEvent, render } from "@testing-library/react-native";
@@ -82,8 +83,8 @@ describe("oracle: bun traces", () => {
     }
 
     const result: TraceResult = { ops, presses, text, label };
-    const out = process.env.RN_BUN_ORACLE_OUT;
-    expect(out).toBeTruthy();
-    writeFileSync(out!, `${JSON.stringify(result)}\n`);
+    const out = process.env.RN_BUN_ORACLE_OUT ?? join(import.meta.dir, "../../compat/oracle-corpus/bun-trace.json");
+    mkdirSync(dirname(out), { recursive: true });
+    writeFileSync(out, `${JSON.stringify(result)}\n`);
   });
 });

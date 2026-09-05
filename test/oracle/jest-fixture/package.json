@@ -19,12 +19,9 @@
     "typescript": "^5.8.2"
   },
   "jest": {
-    "preset": "react-native",
+    "preset": "./rn-jest-preset.js",
     "testMatch": [
       "<rootDir>/jest-traces.test.tsx"
-    ],
-    "transformIgnorePatterns": [
-      "node_modules/(?!(react-native|@react-native|@react-native-community|@testing-library)/)"
     ]
   }
 }

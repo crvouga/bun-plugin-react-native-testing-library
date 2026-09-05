@@ -37,26 +37,28 @@ async function run(cmd: string[], cwd: string, env?: Record<string, string>): Pr
 }
 
 async function packPlugin(work: string): Promise<string> {
-  const { code, out } = await run(["npm", "pack", "--json"], ROOT);
-  if (code !== 0) throw new Error(`npm pack failed:\n${out}`);
-  // npm pack --json prints an array; also writes <name>-<version>.tgz in cwd
+  // Prefer bun pack (no npm required); fall back to npm pack --json.
+  let pack = await run([process.execPath, "pm", "pack"], ROOT);
+  if (pack.code !== 0) {
+    pack = await run(["npm", "pack", "--json"], ROOT);
+  }
+  if (pack.code !== 0) throw new Error(`pack failed:\n${pack.out}`);
+
   let tgzName: string | null = null;
-  try {
-    const parsed = JSON.parse(out.trim().split("\n").filter(Boolean).at(-1)!) as
-      | Array<{ filename?: string }>
-      | {
-          filename?: string;
-        };
-    const first = Array.isArray(parsed) ? parsed[0] : parsed;
-    tgzName = first?.filename ?? null;
-  } catch {
-    // fall through
-  }
+  const match = pack.out.match(/([\w.@+-]+\.tgz)/);
+  tgzName = match?.[1] ?? null;
   if (!tgzName) {
-    const match = out.match(/([\w.-]+\.tgz)/);
-    tgzName = match?.[1] ?? null;
+    try {
+      const parsed = JSON.parse(pack.out.trim().split("\n").filter(Boolean).at(-1)!) as
+        | Array<{ filename?: string }>
+        | { filename?: string };
+      const first = Array.isArray(parsed) ? parsed[0] : parsed;
+      tgzName = first?.filename ?? null;
+    } catch {
+      // fall through
+    }
   }
-  if (!tgzName) throw new Error(`npm pack did not produce a tarball:\n${out}`);
+  if (!tgzName) throw new Error(`pack did not produce a tarball:\n${pack.out}`);
   const src = join(ROOT, tgzName);
   const dest = join(work, tgzName);
   if (!existsSync(src)) throw new Error(`packed tarball missing: ${src}`);
@@ -106,17 +108,20 @@ test("matrix smoke render/press", async () => {
 `,
     );
   } else {
+    // Top-level imports only — RNTL registers beforeAll() at module load;
+    // dynamic import() inside test() makes Bun throw "Cannot call beforeAll() inside a test".
     writeFileSync(
       join(dir, "import.test.ts"),
       `import { test, expect } from "bun:test";
+import * as plugin from "bun-plugin-react-native-testing-library";
+import { View } from "react-native";
+import { render } from "@testing-library/react-native";
 
-test("matrix light import surface", async () => {
-  const plugin = await import("bun-plugin-react-native-testing-library");
-  expect(typeof plugin.createReactNativePlugin ?? typeof plugin.default).toBeTruthy();
-  const rn = await import("react-native");
-  expect(rn.View).toBeTruthy();
-  const rntl = await import("@testing-library/react-native");
-  expect(typeof rntl.render).toBe("function");
+test("matrix light import surface", () => {
+  const factory = plugin.createReactNativePlugin ?? plugin.default;
+  expect(typeof factory).toBe("function");
+  expect(View).toBeTruthy();
+  expect(typeof render).toBe("function");
 });
 `,
     );
