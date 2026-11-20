@@ -17,5 +17,12 @@
     "types": ["bun"]
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "test/real-world", "test/real-world-expo", "test/example-app", ".virt-rn-fixture"]
+  "exclude": [
+    "node_modules",
+    "test/real-world",
+    "test/real-world-expo",
+    "test/real-world-expo58",
+    "test/example-app",
+    ".virt-rn-fixture"
+  ]
 }

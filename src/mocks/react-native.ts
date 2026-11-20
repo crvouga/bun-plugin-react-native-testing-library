@@ -189,6 +189,14 @@ export function createReactNativePublicAPI(config: ResolvedConfig) {
 
     unstable_DEFAULT_INITIAL_NUM_TO_RENDER: DEFAULT_INITIAL_NUM_TO_RENDER,
 
+    // RN 0.88 removed InteractionManager in favor of the web idle-callback
+    // globals; the mock keeps both so suites migrating across SDKs run.
+    requestIdleCallback: (cb: (idle: { didTimeout: boolean; timeRemaining: () => number }) => void) =>
+      setTimeout(() => cb({ didTimeout: false, timeRemaining: () => 50 }), 0) as unknown as number,
+    cancelIdleCallback: (id: number | null) => {
+      if (id != null) clearTimeout(id);
+    },
+
     EventEmitter,
     NativeEventEmitter,
     DeviceEventEmitter: deviceEmitter,

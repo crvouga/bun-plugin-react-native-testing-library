@@ -45,6 +45,15 @@ export const FULL_ROWS: readonly MatrixRow[] = [
     testRenderer: "1.2.0",
     rntl: "14.0.1",
   },
+  {
+    id: "rn088-rntl141-ios",
+    kind: "full",
+    platform: "ios",
+    reactNative: "0.88.1",
+    react: "19.3.1",
+    testRenderer: "1.3.1",
+    rntl: "14.0.1",
+  },
 ];
 
 /** Intervening RN minors — lightweight import/export only. */

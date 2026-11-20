@@ -90,8 +90,9 @@ add environment setup / OS / Bun version axes). Gate artifacts never update trac
 | Bun | `1.4.0` (minimum) and latest stable (CI macOS axis) |
 | OS | Linux + macOS (`bun check` on both) |
 | Platform resolution | `ios` and `android` (`RN_BUN_PLATFORM`) |
-| react-native / react / test-renderer | Full clean-consumer matrix: **0.78 + React 19.0 + test-renderer 1.0**, **0.82 + 19.1 + 1.1**, **0.87 + 19.2 + 1.2**; light import jobs for intervening minors **0.79–0.86** |
+| react-native / react / test-renderer | Full clean-consumer matrix: **0.78 + React 19.0 + test-renderer 1.0**, **0.82 + 19.1 + 1.1**, **0.87 + 19.2 + 1.2**, **0.88 + 19.3 + 1.3**; light import jobs for intervening minors **0.79–0.86** |
 | `@testing-library/react-native` | **14.0.0** (minimum) and **14.0.1** |
+| Expo SDK | **SDK 57** (`test/real-world-expo`) and **SDK 58 / RN 0.88** (`test/real-world-expo58`) fixtures |
 | Differential oracle | Deterministic RNTL traces under Bun plugin ≡ official RN Jest preset |
 
 Pinned sandbox versions used for third-party shims: React **19.2.8**, RN **0.87.1**, RNTL **14.0.1**, test-renderer **1.2.x**.
@@ -121,10 +122,64 @@ Configure via `createReactNativePlugin(options)`, env vars, or optional `./rn-bu
 | `window` | — | `{390,844,3,1}` | `Dimensions` / `useWindowDimensions` metrics |
 | `strategy` | `RN_BUN_STRATEGY` | `"auto"` → `"namespace"` | How to intercept RN sources (see pitfall below) |
 | `libraryMocks` | `RN_BUN_LIBRARY_MOCKS` | `"auto"` | Auto-register third-party library shims when packages resolve (`false` / comma-separated names to filter) |
+| `disable` | — | `[]` | Registry shim names to skip entirely |
+| `compat.shims` | — | `[]` | Project-local shims (see Extending below) |
+| `compat.compatPackages` | — | `[]` | npm compat packages to load explicitly |
+
+## Extending: your own library shims
+
+When a native library has no built-in shim, add one in **one small file** — no fork, no package edits. Put it in `rn-bun.config.ts` at your app root:
+
+```ts
+// rn-bun.config.ts
+import { defineShim } from "bun-plugin-react-native-testing-library";
+
+export default {
+  compat: {
+    shims: [
+      defineShim({
+        name: "my-fancy-view",
+        packages: ["react-native-fancy-view"], // activates only when installed
+        provenance: "local",
+        surface: "presentation", // or "behavioral" when the mock models native behavior
+        targets: ["react-native-fancy-view"], // declared mock targets (conflict detection)
+        register: () => {
+          /* mock.module(...) your library's surface */
+        },
+      }),
+    ],
+  },
+};
+```
+
+Registry semantics:
+
+- Registration order is deterministic: built-ins (by `priority`), then npm compat packages, then your local shims.
+- Two active shims claiming the same target is a startup error naming both, unless the later one sets `override: true` (or you `disable` one via `disable: ["name"]`).
+- Programmatic embedders can call `registerCompat({ compat: { shims: [...] } })` from a custom preload instead of the config file.
+
+See [`examples/local-shim/example-shim.ts`](examples/local-shim/example-shim.ts) for a complete shim.
+
+## Diagnostics: `bun-rn-doctor`
+
+```bash
+bunx bun-rn-doctor            # audit (default): which shims are planned, which deps are uncovered
+bunx bun-rn-doctor audit --json   # machine-readable report
+bunx bun-rn-doctor scaffold react-native-fancy-view   # write rn-bun.shims/<pkg>.ts starter
+```
+
+The audit plans the registry exactly like the preload does but registers nothing, so its report matches what a real run activates. It reports:
+
+- discovered compat packages and any load errors,
+- every registry shim with its state (`planned` / `unavailable` / `disabled` / `filtered`) and reason,
+- per-dependency coverage for React Native / Expo ecosystem deps,
+- whether `jest-expo` native-module definitions are available as the official fallback.
+
+Exit code is `1` when uncovered dependencies or broken compat packages are found; the report ends with the exact `scaffold` command for each gap.
 
 ## Third-party library compatibility
 
-When a package is installed in the consumer, preload auto-registers a shim (`libraryMocks: "auto"`). Proven in [`test/real-world/`](test/real-world/) against the versions below.
+When a package is installed in the consumer, preload auto-registers a shim (`libraryMocks: "auto"`). Proven in [`test/real-world/`](test/real-world/) against the versions below. Per-library coverage verdicts live in [`docs/compatibility.md`](docs/compatibility.md).
 
 Fail-closed scanners (`test/contract/deep-path-inventory.test.ts`, `test/contract/import-surface.test.ts`) walk the sandbox catalog: every deep `react-native/Libraries|src/...` import must be in `DEEP_PATHS`, every direct sandbox dependency must be catalogued (or infra-allowlisted), and every native surface must map to a registry shim. Coverage evidence is written to `.compat-out/coverage-manifest.json` by `bun check` (not committed).
 
@@ -331,6 +386,12 @@ Do this once so CI can publish. Full checklist: **[docs/SECRETS.md](./docs/SECRE
 Validate the checklist anytime with `bun run secrets:doctor`.
 
 After that, every green push to `main` updates npm automatically (`feat`/`fix`/`BREAKING` pick the bump; anything else is a patch).
+
+## Provenance and attribution
+
+This repository is a fork of [crvouga/bun-plugin-react-native-testing-library](https://github.com/crvouga/bun-plugin-react-native-testing-library) (MIT), maintained to evolve the plugin into an extensible React Native / Expo compatibility layer for `bun test`. Upstream is kept as the `upstream` remote; changes are structured to be upstreamable.
+
+Some compatibility shims and patterns may be ported from [Censkh/bun-test-react-native](https://github.com/Censkh/bun-test-react-native) (MIT, © James Waterhouse). Any ported file carries a header comment naming its source.
 
 ## License
 

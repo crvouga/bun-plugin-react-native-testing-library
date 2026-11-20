@@ -14,10 +14,14 @@
   },
   "files": [
     "src",
+    "scripts/doctor.ts",
     "bunfig.example.toml",
     "README.md",
     "LICENSE"
   ],
+  "bin": {
+    "bun-rn-doctor": "./scripts/doctor.ts"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/crvouga/bun-plugin-react-native-testing-library.git"

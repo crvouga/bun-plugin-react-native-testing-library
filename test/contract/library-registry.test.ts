@@ -3,6 +3,7 @@
  */
 
 import { describe, expect, test } from "bun:test";
+import path from "node:path";
 import { resolveConfig, parseLibraryMocksEnv } from "../../src/config.ts";
 import { LIBRARY_REGISTRY, registerLibraryMocks } from "../../src/libraries/index.ts";
 
@@ -82,5 +83,31 @@ describe("contract: library registry", () => {
     }
     // Names not requested must be skipped
     expect(result.skipped).toContain("skia");
+  });
+
+  test("registerLibraryMocks result carries the registry report fields", () => {
+    const result = registerLibraryMocks(resolveConfig({ libraryMocks: "auto" }));
+    expect(Array.isArray(result.activated)).toBe(true);
+    expect(Array.isArray(result.skipped)).toBe(true);
+    expect(Array.isArray(result.overridden)).toBe(true);
+    expect(Array.isArray(result.disabled)).toBe(true);
+    expect(Array.isArray(result.unavailable)).toBe(true);
+    // Built-in shims do not declare targets, so no same-target conflicts can arise among them.
+    expect(result.overridden).toEqual([]);
+  });
+
+  test("disable option removes a shim from the active set", () => {
+    const sandbox = path.join(import.meta.dir, "../real-world");
+    const prev = process.cwd();
+    try {
+      process.chdir(sandbox);
+      const enabled = registerLibraryMocks(resolveConfig({ libraryMocks: "auto" }));
+      const disabled = registerLibraryMocks(resolveConfig({ libraryMocks: "auto", disable: ["reanimated"] }));
+      expect(enabled.activated).toContain("reanimated");
+      expect(disabled.activated).not.toContain("reanimated");
+      expect(disabled.disabled).toContain("reanimated");
+    } finally {
+      process.chdir(prev);
+    }
   });
 });

@@ -4,6 +4,7 @@ preload = ["./src/preload.ts"]
 pathIgnorePatterns = [
   "test/real-world/**",
   "test/real-world-expo/**",
+  "test/real-world-expo58/**",
   "test/oracle/jest-fixture/**",
 ]
 

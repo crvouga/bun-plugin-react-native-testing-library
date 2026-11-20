@@ -1,0 +1,9 @@
+{
+  "name": "compat-packages-app",
+  "type": "module",
+  "private": true,
+  "dependencies": {
+    "react": "19.2.8",
+    "bun-rn-compat-probe": "file:/home/andrew-bierman/Projects/bun-plugin-react-native-testing-library/test/fixtures/compat-packages/node_modules/bun-rn-compat-probe"
+  }
+}

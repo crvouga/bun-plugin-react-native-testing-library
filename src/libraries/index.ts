@@ -7,7 +7,7 @@
 
 import type { ResolvedConfig } from "../config.ts";
 import type { LibraryShim } from "./helpers.ts";
-import { packageResolves } from "./helpers.ts";
+import { effectiveTargets, packageResolves } from "./helpers.ts";
 import { gestureHandlerShim } from "./gesture-handler.ts";
 import { safeAreaShim, screensShim } from "./navigation.ts";
 import { reanimatedShim, workletsShim } from "./reanimated.ts";
@@ -119,6 +119,40 @@ export const LIBRARY_REGISTRY: readonly LibraryShim[] = [
 export type RegisterLibraryMocksResult = {
   activated: string[];
   skipped: string[];
+  /** Names held back by the `libraryMocks` filter (kept distinct from failures). */
+  filteredOut: string[];
+  /** Same-target conflicts that an explicit `override` resolved. */
+  overridden: { target: string; winner: string; loser: string }[];
+  /** Names skipped through `config.disable`. */
+  disabled: string[];
+  /** Shims whose activation packages did not all resolve. */
+  unavailable: string[];
+};
+
+export type RegistrySources = {
+  /** Overrides the built-in registry (used by tests and embedders). */
+  builtins?: readonly LibraryShim[];
+  /** Shims contributed by installed compat packages. */
+  packageShims?: readonly LibraryShim[];
+  /** Shims contributed by the consumer project. */
+  localShims?: readonly LibraryShim[];
+  /** Directory for package resolution. Default: process.cwd(). */
+  cwd?: string;
+};
+
+export type RegistryPlan = {
+  /** Shims to register, in deterministic order: builtins -> package -> local. */
+  ordered: LibraryShim[];
+  /** Names filtered out by `libraryMocks`. */
+  filteredOut: string[];
+  /** Names skipped through `disable`. */
+  disabled: string[];
+  /** Names whose activation packages did not all resolve. */
+  unavailable: string[];
+  /** Same-target claims resolved by an explicit `override`. */
+  overridden: { target: string; winner: string; loser: string }[];
+  /** Same-target claims resolved without an override (currently empty; kept for reporting). */
+  conflicts: { target: string; holder: string; challenger: string }[];
 };
 
 function shouldRegister(shim: LibraryShim, option: ResolvedConfig["libraryMocks"]): boolean {
@@ -128,36 +162,103 @@ function shouldRegister(shim: LibraryShim, option: ResolvedConfig["libraryMocks"
 }
 
 /**
- * Register library shims that are installed in the consumer project.
- * Throws if `libraryMocks` is a string[] containing unknown registry names.
+ * Plan the active shim set: built-ins by ascending priority, then package
+ * shims, then local shims. Conflict detection runs over declared mock targets
+ * (see `effectiveTargets`): two active shims claiming the same target throw,
+ * naming both shims, unless the later one declares `override`.
  */
-export function registerLibraryMocks(config: ResolvedConfig): RegisterLibraryMocksResult {
-  const cwd = process.cwd();
+export function resolveRegistry(config: ResolvedConfig, sources: RegistrySources = {}): RegistryPlan {
+  const cwd = sources.cwd ?? process.cwd();
   const option = config.libraryMocks;
 
   if (Array.isArray(option)) {
-    const known = new Set(LIBRARY_REGISTRY.map((s) => s.name));
+    const all = [
+      ...(sources.builtins ?? LIBRARY_REGISTRY),
+      ...(sources.packageShims ?? []),
+      ...(sources.localShims ?? []),
+    ];
+    const known = new Set(all.map((s) => s.name));
     const unknown = option.filter((n) => !known.has(n));
     if (unknown.length > 0) {
       throw new Error(`[rn-bun] Unknown libraryMocks entries: ${unknown.join(", ")}. Known: ${[...known].join(", ")}`);
     }
   }
 
-  const activated: string[] = [];
-  const skipped: string[] = [];
+  const disabled = new Set(config.disable);
+  const filteredOut: string[] = [];
+  const unavailable: string[] = [];
+  const planDisabled: string[] = [];
 
-  for (const shim of LIBRARY_REGISTRY) {
+  const builtinList = (sources.builtins ?? LIBRARY_REGISTRY)
+    .map((shim, i) => ({ shim, key: (shim.priority ?? 100) * 10000 + i }))
+    .sort((a, b) => a.key - b.key)
+    .map((e) => ({ ...e.shim, provenance: e.shim.provenance ?? "builtin" }) as LibraryShim);
+  const packageList = (sources.packageShims ?? []).map(
+    (shim) => ({ ...shim, provenance: shim.provenance ?? "package" }) as LibraryShim,
+  );
+  const localList = (sources.localShims ?? []).map(
+    (shim) => ({ ...shim, provenance: shim.provenance ?? "local" }) as LibraryShim,
+  );
+
+  const ordered: LibraryShim[] = [];
+  const claimed = new Map<string, string>();
+  const overridden: RegistryPlan["overridden"] = [];
+  const conflicts: RegistryPlan["conflicts"] = [];
+
+  const consider = (shim: LibraryShim): void => {
+    if (disabled.has(shim.name)) {
+      planDisabled.push(shim.name);
+      return;
+    }
     if (!shouldRegister(shim, option)) {
-      skipped.push(shim.name);
-      continue;
+      filteredOut.push(shim.name);
+      return;
     }
     const available = shim.packages.every((p) => packageResolves(p, cwd));
     if (!available) {
-      skipped.push(shim.name);
-      continue;
+      unavailable.push(shim.name);
+      return;
     }
+    for (const target of effectiveTargets(shim)) {
+      const holder = claimed.get(target);
+      if (holder != null && holder !== shim.name) {
+        if (shim.override) {
+          overridden.push({ target, winner: shim.name, loser: holder });
+        } else {
+          throw new Error(
+            `[rn-bun] Shim conflict: "${shim.name}" and "${holder}" both claim target "${target}". ` +
+              `Disable one of them via \`disable\`, or set \`override: true\` on "${shim.name}" to replace "${holder}".`,
+          );
+        }
+      }
+      if (holder == null || shim.override) claimed.set(target, shim.name);
+    }
+    ordered.push(shim);
+  };
+
+  for (const shim of builtinList) consider(shim);
+  for (const shim of packageList) consider(shim);
+  for (const shim of localList) consider(shim);
+
+  return { ordered, filteredOut, disabled: planDisabled, unavailable, overridden, conflicts };
+}
+
+/**
+ * Register library shims that are installed in the consumer project.
+ * Throws if `libraryMocks` is a string[] containing unknown registry names,
+ * or when two active shims claim the same target without an override.
+ */
+export function registerLibraryMocks(
+  config: ResolvedConfig,
+  sources: RegistrySources = {},
+): RegisterLibraryMocksResult {
+  const plan = resolveRegistry(config, sources);
+  const activated: string[] = [];
+  const skipped: string[] = [];
+
+  for (const shim of plan.ordered) {
     try {
-      shim.register({ config, cwd });
+      shim.register({ config, cwd: process.cwd() });
       activated.push(shim.name);
     } catch (err) {
       if (config.debug) {
@@ -170,11 +271,19 @@ export function registerLibraryMocks(config: ResolvedConfig): RegisterLibraryMoc
     }
   }
 
+  const skippedAll = [...plan.filteredOut, ...plan.disabled, ...plan.unavailable, ...skipped];
   if (config.debug) {
-    console.log(`[rn-bun] libraryMocks activated: [${activated.join(", ")}] skipped: [${skipped.join(", ")}]`);
+    console.log(`[rn-bun] libraryMocks activated: [${activated.join(", ")}] skipped: [${skippedAll.join(", ")}]`);
   }
 
-  return { activated, skipped };
+  return {
+    activated,
+    skipped: skippedAll,
+    filteredOut: plan.filteredOut,
+    overridden: plan.overridden,
+    disabled: plan.disabled,
+    unavailable: plan.unavailable,
+  };
 }
 
 export { LIBRARY_REGISTRY as libraryRegistry };

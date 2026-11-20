@@ -1,0 +1,14 @@
+// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
+
+exports[`jest-compat: snapshots RN render snapshot writes and matches 1`] = `
+{
+  "$$typeof": Symbol(react.test.json),
+  "children": [
+    "sdk-compat",
+  ],
+  "props": {
+    "testID": "snap-label",
+  },
+  "type": "Text",
+}
+`;

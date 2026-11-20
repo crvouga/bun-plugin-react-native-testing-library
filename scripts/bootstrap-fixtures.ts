@@ -18,6 +18,7 @@ const PLUGIN_NAME = "bun-plugin-react-native-testing-library";
 export const FIXTURES = [
   { name: "real-world", dir: join(ROOT, "test", "real-world") },
   { name: "real-world-expo", dir: join(ROOT, "test", "real-world-expo") },
+  { name: "real-world-expo58", dir: join(ROOT, "test", "real-world-expo58") },
 ] as const;
 
 /**

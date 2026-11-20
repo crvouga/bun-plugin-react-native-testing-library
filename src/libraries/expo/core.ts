@@ -8,6 +8,7 @@ import { mock } from "bun:test";
 import type { LibraryShim } from "../helpers.ts";
 import { mockBoth, tryRequire, loadConsumerReact, packageResolves } from "../helpers.ts";
 import { createHostComponent, asyncNoop, noop } from "../../mocks/host.ts";
+import { checkExpoJestExpoVersions } from "./versions.ts";
 
 type PropDef = {
   type?: string;
@@ -69,6 +70,30 @@ function loadJestExpoTables(cwd: string): Record<string, Record<string, PropDef>
   return merged;
 }
 
+let pairingWarned = false;
+
+function installedVersion(cwd: string, pkg: string): string | null {
+  try {
+    const pkgJson = JSON.parse(readFileSync(join(cwd, "node_modules", pkg, "package.json"), "utf8")) as {
+      version?: string;
+    };
+    return pkgJson.version ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/** Warn once when jest-expo does not match the installed Expo SDK major. */
+function warnOnJestExpoMismatch(cwd: string, debug: boolean | undefined): void {
+  if (pairingWarned) return;
+  const pairing = checkExpoJestExpoVersions(installedVersion(cwd, "expo"), installedVersion(cwd, "jest-expo"));
+  if (!pairing.match && pairing.note) {
+    pairingWarned = true;
+    // A mismatched definitions source silently degrades fidelity — surface it.
+    if (debug) console.warn(`[rn-bun] ${pairing.note}`);
+  }
+}
+
 function indexPackageMocks(cwd: string): Map<string, string> {
   const out = new Map<string, string>();
   const nm = join(cwd, "node_modules");
@@ -120,6 +145,7 @@ export const expoCoreShim: LibraryShim = {
   name: "expo",
   packages: ["expo-modules-core"],
   register({ cwd, config }) {
+    warnOnJestExpoMismatch(cwd, config.debug);
     const React = loadConsumerReact();
     const tables = loadJestExpoTables(cwd);
     const packageMocks = indexPackageMocks(cwd);

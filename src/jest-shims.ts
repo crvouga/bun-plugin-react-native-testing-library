@@ -3,9 +3,26 @@
  * Fills gaps RNTL / library mocks probe (`advanceTimersByTimeAsync`, etc.).
  */
 
+import path from "node:path";
+
 type JestLike = Record<string, unknown>;
 
 let warnedJestMock = false;
+
+/**
+ * Best-effort caller-file resolution for requireActual's relative ids:
+ * the first stack frame outside this shim.
+ */
+function resolveCallerFile(): string | null {
+  const stack = new Error().stack?.split("\n") ?? [];
+  for (const line of stack) {
+    const match = /((?:\/[^\s():]+)+\.(?:ts|tsx|js|jsx|mjs|cjs)):\d+:\d+/.exec(line);
+    if (match?.[1] && !match[1].endsWith("jest-shims.ts")) {
+      return match[1];
+    }
+  }
+  return null;
+}
 
 export function installJestShims(): void {
   const g = globalThis as typeof globalThis & { jest?: JestLike };
@@ -88,8 +105,21 @@ function patchJest(existing: JestLike): void {
 
   if (typeof existing.requireActual !== "function") {
     existing.requireActual = (id: string) => {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      return require(id);
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        return require(id);
+      } catch (err) {
+        // Jest resolves relative ids against the CALLING file; a plain require
+        // would resolve against this shim. Re-resolve from the caller.
+        if (id.startsWith(".")) {
+          const caller = resolveCallerFile();
+          if (caller) {
+            // eslint-disable-next-line @typescript-eslint/no-require-imports
+            return require(path.resolve(path.dirname(caller), id));
+          }
+        }
+        throw err;
+      }
     };
   }
   if (typeof existing.requireMock !== "function") {
@@ -111,6 +141,31 @@ function patchJest(existing: JestLike): void {
           "[rn-bun] jest.mock() is not supported under bun test. Use mock.module() from bun:test, or rely on bun-plugin-react-native-testing-library libraryMocks.",
         );
       }
+    };
+  } else {
+    // Native jest.mock requires a factory and throws a bare TypeError for a
+    // missing one. Keep the factory path native (it maps to mock.module),
+    // and make the factory-less failure carry the migration pointer.
+    const nativeMock = existing.mock as (id: string, factory?: () => unknown) => void;
+    existing.mock = (id: string, factory?: () => unknown) => {
+      if (typeof factory !== "function") {
+        throw new Error(
+          `[rn-bun] jest.mock('${id}') without a factory is not supported. ` +
+            `Use jest.mock('${id}', () => ({ ... })) or mock.module('${id}', factory) from bun:test — ` +
+            `see docs/migration-jest.md.`,
+        );
+      }
+      return nativeMock(id, factory);
+    };
+  }
+
+  if (typeof existing.resetModules !== "function") {
+    existing.resetModules = () => {
+      throw new Error(
+        "[rn-bun] jest.resetModules() has no bun:test equivalent (module registry is not resettable). " +
+          "Isolate state by splitting tests into separate files, or re-register with mock.module — " +
+          "see docs/migration-jest.md.",
+      );
     };
   }
 }

@@ -20,8 +20,35 @@ import { type PluginOptions, type ResolvedConfig, resolveConfig } from "./config
 import { resolvePlatformFile } from "./resolve.ts";
 import { createTransformCache, PLUGIN_VERSION } from "./transform-flow.ts";
 
-export type { PluginOptions, ResolvedConfig, Platform, LoadStrategy } from "./config.ts";
+export type { PluginOptions, ResolvedConfig, Platform, LoadStrategy, CompatConfig, ResolvedCompat } from "./config.ts";
 export { resolveConfig, loadConfig, DEFAULT_ASSET_EXTS } from "./config.ts";
+export { defineShim } from "./shim.ts";
+export type { LibraryShim, ShimProvenance } from "./libraries/helpers.ts";
+export { registerLibraryMocks } from "./libraries/index.ts";
+import { registerLibraryMocks } from "./libraries/index.ts";
+import { collectCompatSources } from "./compat-packages.ts";
+
+/**
+ * Register consumer compatibility shims for a custom preload entry:
+ *
+ *   plugin(createReactNativePlugin({ platform: "ios" }));
+ *   registerCompat({ compat: { shims: [defineShim({ ... })] } });
+ *
+ * Equivalent to what the `./preload` entry does with `rn-bun.config.ts`,
+ * for embedders who drive registration themselves.
+ */
+export function registerCompat(options: PluginOptions = {}) {
+  const config = resolveConfig(options);
+  const compatSources = collectCompatSources(config.compat.compatPackages, process.cwd());
+  for (const err of compatSources.errors) {
+    // Misconfigured compat packages must be visible, never silent.
+    console.warn(err);
+  }
+  return registerLibraryMocks(config, {
+    localShims: config.compat.localShims,
+    packageShims: compatSources.packageShims,
+  });
+}
 export { resolvePlatformFile, candidatePaths, brokenResolveSkipNative } from "./resolve.ts";
 export { transformFlow, createTransformCache, PLUGIN_VERSION } from "./transform-flow.ts";
 export { assetModuleSource, isAssetPath } from "./assets.ts";

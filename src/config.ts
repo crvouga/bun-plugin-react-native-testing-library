@@ -4,6 +4,9 @@
  * Pure helpers — no side effects at import time.
  */
 
+import type { LibraryShim } from "./libraries/helpers.ts";
+import { defineShim } from "./shim.ts";
+
 export type Platform = "ios" | "android";
 
 export type LoadStrategy = "auto" | "direct" | "namespace";
@@ -21,6 +24,21 @@ export type WindowMetrics = {
   height: number;
   scale: number;
   fontScale: number;
+};
+
+/**
+ * Consumer extension surface, set via `rn-bun.config.ts` or plugin options.
+ * - `shims`: project-local shims (validated through `defineShim` on load)
+ * - `compatPackages`: npm compat packages to load explicitly
+ */
+export type CompatConfig = {
+  shims?: readonly LibraryShim[];
+  compatPackages?: readonly string[];
+};
+
+export type ResolvedCompat = {
+  localShims: readonly LibraryShim[];
+  compatPackages: readonly string[];
 };
 
 export type PluginOptions = {
@@ -47,6 +65,10 @@ export type PluginOptions = {
   strategy?: LoadStrategy;
   /** Third-party library mock registration. Default: `"auto"`. */
   libraryMocks?: LibraryMocksOption;
+  /** Registry shim names to skip entirely, regardless of `libraryMocks`. */
+  disable?: readonly string[];
+  /** Consumer compatibility extension surface. */
+  compat?: CompatConfig;
 };
 
 export type ResolvedConfig = {
@@ -59,6 +81,8 @@ export type ResolvedConfig = {
   window: WindowMetrics;
   strategy: LoadStrategy;
   libraryMocks: LibraryMocksOption;
+  disable: readonly string[];
+  compat: ResolvedCompat;
 };
 
 export const DEFAULT_ASSET_EXTS = [
@@ -117,6 +141,11 @@ export function resolveConfig(options: PluginOptions = {}): ResolvedConfig {
     window: { ...DEFAULT_WINDOW, ...options.window },
     strategy: options.strategy ?? "auto",
     libraryMocks: options.libraryMocks ?? "auto",
+    disable: options.disable ?? [],
+    compat: {
+      localShims: options.compat?.shims ?? [],
+      compatPackages: options.compat?.compatPackages ?? [],
+    },
   };
 }
 
@@ -134,9 +163,10 @@ export function parseLibraryMocksEnv(raw: string | undefined): LibraryMocksOptio
 
 /**
  * Load config from env vars (+ optional `rn-bun.config.ts` if present).
- * Used by the preload entry only.
+ * Used by the preload entry and by the doctor audit; pass `cwd` to audit or
+ * load a directory other than the process cwd.
  */
-export function loadConfig(): ResolvedConfig {
+export function loadConfig(cwd: string = process.cwd()): ResolvedConfig {
   const platformEnv = process.env.RN_BUN_PLATFORM;
   const platform = platformEnv === "android" || platformEnv === "ios" ? platformEnv : undefined;
   const debug = process.env.RN_BUN_DEBUG === "1" || process.env.RN_BUN_DEBUG === "true";
@@ -148,7 +178,7 @@ export function loadConfig(): ResolvedConfig {
   try {
     // Optional consumer config — sync require so preload stays sync.
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const resolved = Bun.resolveSync("./rn-bun.config.ts", process.cwd());
+    const resolved = Bun.resolveSync("./rn-bun.config.ts", cwd);
     // Dynamic import is async; for preload we use require via Bun.
     const mod = require(resolved);
     fileOpts = (mod?.default ?? mod ?? {}) as PluginOptions;
@@ -158,6 +188,18 @@ export function loadConfig(): ResolvedConfig {
 
   const libraryMocks = parseLibraryMocksEnv(process.env.RN_BUN_LIBRARY_MOCKS) ?? fileOpts.libraryMocks;
 
+  const compat = fileOpts.compat;
+  if (compat?.shims) {
+    // Validate consumer shims at load time so a broken shim names its file
+    // and reason here, not as a mystery failure during registration.
+    try {
+      for (const shim of compat.shims) defineShim(shim);
+    } catch (err) {
+      const reason = err instanceof Error ? err.message : String(err);
+      throw new Error(`[rn-bun] rn-bun.config.ts compat.shims: ${reason}`);
+    }
+  }
+
   return resolveConfig({
     ...fileOpts,
     platform: platform ?? fileOpts.platform,
@@ -165,5 +207,7 @@ export function loadConfig(): ResolvedConfig {
     strategy: strategy ?? fileOpts.strategy,
     cacheDir: process.env.RN_BUN_CACHE_DIR ?? fileOpts.cacheDir,
     libraryMocks,
+    disable: fileOpts.disable,
+    compat,
   });
 }
